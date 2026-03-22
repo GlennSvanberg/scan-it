@@ -58,6 +58,7 @@ export const claimPhone = mutation({
   },
 });
 
+/** Phone client dedupes and queues offline; optional future idempotency: clientScanId + unique index. */
 export const submitScan = mutation({
   args: {
     publicId: v.string(),

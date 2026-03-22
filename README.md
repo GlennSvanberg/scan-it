@@ -1,6 +1,6 @@
 # Scan It
 
-Phone-as-a-scanner for your desktop: open the app on a computer, start a session, scan a pairing QR code with your phone, then scan barcodes and QR codes with the phone camera. Decodings show up on the desktop in real time (Convex subscriptions), with optional clipboard copy for the latest scan.
+Phone-as-a-scanner for your desktop: open the app on a computer, start a session, scan a pairing QR code with your phone, then scan barcodes and QR codes with the phone camera. Decodings show up on the desktop in real time (Convex subscriptions). Clipboard auto-copy for new scans is **off by default**; turn on **Scan to clipboard** on the desk when you want it.
 
 **Stack:** [Convex](https://convex.dev) (backend + realtime), [TanStack Start](https://tanstack.com/start) + React (frontend), [Tailwind CSS](https://tailwindcss.com) v4, shadcn-style UI primitives (Radix Slot + CVA), [react-qr-code](https://www.npmjs.com/package/react-qr-code) (pairing QR on the desk), [html5-qrcode](https://www.npmjs.com/package/html5-qrcode) (camera scanning on the phone).
 
@@ -13,18 +13,19 @@ Phone-as-a-scanner for your desktop: open the app on a computer, start a session
 | Phones per session | **One.** The first successful pairing wins; other devices see “already paired”. |
 | Deployment | **Single cloud** origin; the pairing URL in the QR is `${origin}/s/${publicId}`. |
 | History | **Full log** for the session (all scans), ordered oldest → newest on the desk. |
+| Desk UI | **Pairing QR** is shown until a phone pairs; after pairing, the QR is hidden and the desk focuses on the scan log. |
 | Pairing trust | **`publicId` in the QR** lets a device open the session page. **Stable `deviceId` in `localStorage`** on the phone is sent on claim and on every scan; the server stores the first claimant and rejects others. |
 
 ### Security notes
 
 - Anyone who can open the pairing URL **before** the real phone pairs could occupy the slot (same as sharing a secret link). Mitigations for later: short TTL, optional numeric PIN shown on the desk, etc.
 - The **desk token** is returned once from `createSession` and kept in **sessionStorage** for that tab; it is required to read the session or end it from the desk UI.
-- Clipboard auto-copy on new scans may be **blocked by the browser** without a prior user gesture; “Copy latest” is the reliable fallback.
+- Clipboard auto-copy runs only when **Scan to clipboard** is enabled (the browser may prompt then). Auto-copy on new scans may still be **blocked** in some environments; **Copy latest** is the reliable fallback.
 
 ## Routes
 
 - `/` — Start a session (desktop).
-- `/desk/$publicId` — Desk: pairing QR, log, end session (requires desk token in sessionStorage).
+- `/desk/$publicId` — Desk: pairing QR (until paired), log, optional scan-to-clipboard, end session (requires desk token in sessionStorage).
 - `/s/$publicId` — Phone: pair (first visit claims slot), then live camera scanner.
 
 ## Development

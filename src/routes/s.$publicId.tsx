@@ -3,6 +3,7 @@ import { useMutation, useQuery } from 'convex/react'
 import * as React from 'react'
 import { api } from '../../convex/_generated/api'
 import { PhoneScanner } from '~/components/phone-scanner'
+import { PortraitScannerGate } from '~/components/portrait-scanner-gate'
 import { SiteHeader } from '~/components/site-header'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -153,7 +154,9 @@ function PhonePage() {
     <div className="flex min-h-dvh flex-col">
       <SiteHeader />
       <main className="mx-auto w-full max-w-lg flex-1 px-4 py-6">
-        <PhoneScanner publicId={publicId} deviceId={deviceId} />
+        <PortraitScannerGate>
+          <PhoneScanner publicId={publicId} deviceId={deviceId} />
+        </PortraitScannerGate>
       </main>
     </div>
   )
