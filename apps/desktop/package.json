@@ -1,14 +1,14 @@
 {
   "name": "@scan-it/desktop",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "tauri:build": "tauri build",
+    "tauri:build": "npx tauri build",
     "lint": "tsc -b --noEmit"
   },
   "dependencies": {

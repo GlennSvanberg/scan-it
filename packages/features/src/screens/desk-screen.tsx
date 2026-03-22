@@ -5,19 +5,21 @@ import QRCode from 'react-qr-code'
 import * as React from 'react'
 import { api } from '@scan-it/convex-api'
 import {
+  allDesktopDownloadRows,
   clearDeskToken,
   cn,
   convexHttpSiteOrigin,
+  detectClientDesktopKind,
   getPairingOrigin,
+  getPrimaryDesktopDownloadHref,
+  primaryDesktopDownloadLabel,
   readDeskToken,
+  resolveDesktopDownloadUrls,
   saveDeskToken,
 } from '@scan-it/lib'
 import { SiteHeader } from '../components/site-header.tsx'
 import { Button } from '../components/ui/button.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.tsx'
-
-const DEFAULT_DESKTOP_DOWNLOAD =
-  'https://github.com/GlennSvanberg/scan-it/releases/latest/download/scan-it-windows-portable.zip'
 
 export type InjectSuffix = 'none' | 'enter' | 'tab'
 
@@ -155,6 +157,15 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
     typeof window !== 'undefined' ? window.location.origin : '',
   )
   const pairUrl = base ? `${base}/s/${publicId}` : ''
+
+  const desktopKind = detectClientDesktopKind()
+  const desktopUrls = resolveDesktopDownloadUrls(import.meta.env)
+  const desktopPrimaryHref = getPrimaryDesktopDownloadHref(
+    desktopUrls,
+    desktopKind,
+  )
+  const desktopPrimaryLabel = primaryDesktopDownloadLabel(desktopKind)
+  const desktopAllRows = allDesktopDownloadRows(desktopUrls)
 
   const clipboardPrimed = React.useRef(false)
   const lastClipboardId = React.useRef<string | null>(null)
@@ -429,7 +440,7 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
             {!inject && !ended ? (
               <Card className="border-primary/20 bg-card/60 shadow-glow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Windows desktop app</CardTitle>
+                  <CardTitle className="text-base">Desktop app (Windows &amp; Mac)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm text-muted-foreground">
                   <p>
@@ -438,20 +449,39 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
                     <span className="font-medium text-foreground">desktop app</span>{' '}
                     can also type each new scan into{' '}
                     <span className="text-foreground">whatever program is focused</span>
-                    —for example Excel or other line-of-business tools.
+                    —for example Excel or other line-of-business tools. On macOS you
+                    may need to grant Accessibility permission for keystrokes.
                   </p>
-                  <Button asChild variant="outline" className="uppercase tracking-wide">
-                    <a
-                      href={
-                        import.meta.env.VITE_DESKTOP_DOWNLOAD_URL?.trim() ||
-                        DEFAULT_DESKTOP_DOWNLOAD
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Download desktop app
-                    </a>
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button asChild variant="outline" className="uppercase tracking-wide">
+                      <a
+                        href={desktopPrimaryHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {desktopPrimaryLabel}
+                      </a>
+                    </Button>
+                    <details className="rounded-md border border-border/60 bg-background/40 px-3 py-2">
+                      <summary className="cursor-pointer text-xs font-medium text-foreground">
+                        All downloads
+                      </summary>
+                      <ul className="mt-2 space-y-1.5 list-none pl-0 text-xs">
+                        {desktopAllRows.map((row) => (
+                          <li key={row.href}>
+                            <a
+                              href={row.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline-offset-2 hover:underline"
+                            >
+                              {row.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </div>
                 </CardContent>
               </Card>
             ) : null}

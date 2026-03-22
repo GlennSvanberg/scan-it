@@ -5,13 +5,23 @@ import {
   Button,
   SiteHeader,
 } from '@scan-it/features'
-
-const DEFAULT_DOWNLOAD =
-  'https://github.com/GlennSvanberg/scan-it/releases/latest/download/scan-it-windows-portable.zip'
+import {
+  allDesktopDownloadRows,
+  detectClientDesktopKind,
+  getPrimaryDesktopDownloadHref,
+  primaryDesktopDownloadLabel,
+  resolveDesktopDownloadUrls,
+} from '@scan-it/lib'
 
 export function LandingPage() {
-  const downloadUrl =
-    import.meta.env.VITE_DESKTOP_DOWNLOAD_URL?.trim() || DEFAULT_DOWNLOAD
+  const desktopKind = detectClientDesktopKind()
+  const desktopUrls = resolveDesktopDownloadUrls(import.meta.env)
+  const desktopPrimaryHref = getPrimaryDesktopDownloadHref(
+    desktopUrls,
+    desktopKind,
+  )
+  const desktopPrimaryLabel = primaryDesktopDownloadLabel(desktopKind)
+  const desktopAllRows = allDesktopDownloadRows(desktopUrls)
 
   return (
     <div className="flex min-h-dvh flex-col bg-background selection:bg-primary/30">
@@ -64,11 +74,41 @@ export function LandingPage() {
                     Start Scanning Now <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="h-14 px-8 text-base border-primary/20 hover:bg-primary/10">
-                  <a href={downloadUrl}>
-                    <Download className="mr-2 h-5 w-5" /> Download Desktop App
-                  </a>
-                </Button>
+                <div className="flex w-full max-w-md flex-col items-center gap-2 sm:w-auto">
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="h-14 w-full px-8 text-base border-primary/20 hover:bg-primary/10 sm:w-auto"
+                  >
+                    <a
+                      href={desktopPrimaryHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Download className="mr-2 h-5 w-5" /> {desktopPrimaryLabel}
+                    </a>
+                  </Button>
+                  <details className="w-full text-left text-sm text-muted-foreground">
+                    <summary className="cursor-pointer hover:text-foreground">
+                      All downloads
+                    </summary>
+                    <ul className="mt-2 space-y-1.5 list-none pl-0">
+                      {desktopAllRows.map((row) => (
+                        <li key={row.href}>
+                          <a
+                            href={row.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline-offset-4 hover:underline"
+                          >
+                            {row.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </div>
               </motion.div>
             </div>
 
@@ -243,7 +283,8 @@ export function LandingPage() {
                 </div>
                 <h3 className="text-2xl font-bold mb-4">Power User? Get the Desktop App</h3>
                 <p className="text-muted-foreground mb-8">
-                  While the web app is great for copying and pasting, our Windows desktop app takes it to the next level.
+                  While the web app is great for copying and pasting, the desktop app
+                  for Windows and Mac takes it to the next level.
                 </p>
                 <div className="space-y-6 mb-8">
                   <div className="flex gap-4">
@@ -265,9 +306,36 @@ export function LandingPage() {
                     </div>
                   </div>
                 </div>
-                <Button asChild className="w-full h-12 text-base">
-                  <a href={downloadUrl}>Download for Windows</a>
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button asChild className="h-12 w-full text-base">
+                    <a
+                      href={desktopPrimaryHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {desktopPrimaryLabel}
+                    </a>
+                  </Button>
+                  <details className="text-sm text-muted-foreground">
+                    <summary className="cursor-pointer font-medium text-foreground">
+                      All downloads
+                    </summary>
+                    <ul className="mt-2 space-y-1.5 list-none pl-0">
+                      {desktopAllRows.map((row) => (
+                        <li key={row.href}>
+                          <a
+                            href={row.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline-offset-4 hover:underline"
+                          >
+                            {row.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </div>
               </motion.div>
             </div>
           </div>

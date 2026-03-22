@@ -1,10 +1,22 @@
-const DEFAULT_DOWNLOAD =
-  'https://github.com/GlennSvanberg/scan-it/releases/latest/download/scan-it-windows-portable.zip'
+import {
+  allDesktopDownloadRows,
+  detectClientDesktopKind,
+  getPrimaryDesktopDownloadHref,
+  primaryDesktopDownloadLabel,
+  resolveDesktopDownloadUrls,
+} from '@scan-it/lib'
 
 export default function App() {
-  const downloadUrl =
-    import.meta.env.VITE_DESKTOP_DOWNLOAD_URL?.trim() || DEFAULT_DOWNLOAD
   const webAppUrl = import.meta.env.VITE_WEB_APP_URL?.trim() || '#'
+
+  const desktopKind = detectClientDesktopKind()
+  const desktopUrls = resolveDesktopDownloadUrls(import.meta.env)
+  const desktopPrimaryHref = getPrimaryDesktopDownloadHref(
+    desktopUrls,
+    desktopKind,
+  )
+  const desktopPrimaryLabel = primaryDesktopDownloadLabel(desktopKind)
+  const desktopAllRows = allDesktopDownloadRows(desktopUrls)
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
@@ -22,8 +34,8 @@ export default function App() {
           <p className="mx-auto max-w-xl font-mono text-sm leading-relaxed text-muted-foreground">
             Use your phone as a wireless barcode and QR scanner. Scans show up on
             your computer in real time—use the web app in your browser or the
-            optional Windows desktop app to type scans into Excel and other
-            programs.
+            optional desktop app (Windows or Mac) to type scans into Excel and
+            other programs.
           </p>
         </section>
 
@@ -43,18 +55,51 @@ export default function App() {
               Open web app
             </a>
             <a
-              href={downloadUrl}
+              href={desktopPrimaryHref}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-card px-6 text-sm font-semibold uppercase tracking-wide text-foreground transition-colors hover:bg-muted"
             >
-              Download desktop (Windows, free)
+              {desktopPrimaryLabel}
             </a>
           </div>
+          <details className="text-xs text-muted-foreground">
+            <summary className="cursor-pointer font-medium text-foreground">
+              All downloads
+            </summary>
+            <ul className="mt-2 space-y-1.5 list-none pl-0">
+              {desktopAllRows.map((row) => (
+                <li key={row.href}>
+                  <a
+                    href={row.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline-offset-2 hover:underline"
+                  >
+                    {row.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
           <p className="text-xs text-muted-foreground">
-            Desktop build is a portable ZIP: extract and run the executable. Set{' '}
+            Override URLs on Vercel with{' '}
+            <code className="rounded bg-muted px-1 font-mono text-[11px]">
+              VITE_DESKTOP_WINDOWS_INSTALLER_URL
+            </code>
+            ,{' '}
+            <code className="rounded bg-muted px-1 font-mono text-[11px]">
+              VITE_DESKTOP_WINDOWS_PORTABLE_URL
+            </code>
+            ,{' '}
+            <code className="rounded bg-muted px-1 font-mono text-[11px]">
+              VITE_DESKTOP_MAC_DMG_URL
+            </code>
+            , or legacy{' '}
             <code className="rounded bg-muted px-1 font-mono text-[11px]">
               VITE_DESKTOP_DOWNLOAD_URL
             </code>{' '}
-            on Vercel to your GitHub release asset URL.
+            (primary button only).
           </p>
         </section>
 
@@ -63,10 +108,11 @@ export default function App() {
             Desktop app
           </h2>
           <p>
-            The Windows app includes the same desk flow plus optional
+            The desktop app includes the same desk flow plus optional
             &quot;type into focused app&quot; so each new scan is sent as
             keystrokes to whatever window is active—useful for spreadsheets and
-            line-of-business tools.
+            line-of-business tools. Windows builds include an installer and a
+            portable ZIP; Mac builds are distributed as a .dmg.
           </p>
         </section>
       </main>

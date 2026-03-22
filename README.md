@@ -2,7 +2,7 @@
 
 Phone-as-a-scanner for your desktop: open Scan It on a computer, scan a pairing QR code with your phone, then scan barcodes and QR codes with the phone camera. Decodings show up on the desk in real time (Convex subscriptions). Clipboard auto-copy for new scans is **off by default**; turn on **Scan to clipboard** on the desk when you want it. Closing the desk tab (or leaving via the Scan It header) ends the desk on the server; the client also sends a best-effort **HTTP beacon** to `POST /desk/end` on your deployment’s **`.convex.site`** origin so the phone disconnects when the tab is closed.
 
-**Stack:** [Convex](https://convex.dev) (backend + realtime), [TanStack Start](https://tanstack.com/start) + React (web app), [Tauri 2](https://v2.tauri.app) + React (optional Windows desktop), [Tailwind CSS](https://tailwindcss.com) v4, shadcn-style UI primitives (Radix Slot + CVA), [react-qr-code](https://www.npmjs.com/package/react-qr-code) (pairing QR on the desk), [html5-qrcode](https://www.npmjs.com/package/html5-qrcode) (camera scanning on the phone).
+**Stack:** [Convex](https://convex.dev) (backend + realtime), [TanStack Start](https://tanstack.com/start) + React (web app), [Tauri 2](https://v2.tauri.app) + React (optional Windows/macOS desktop), [Tailwind CSS](https://tailwindcss.com) v4, shadcn-style UI primitives (Radix Slot + CVA), [react-qr-code](https://www.npmjs.com/package/react-qr-code) (pairing QR on the desk), [html5-qrcode](https://www.npmjs.com/package/html5-qrcode) (camera scanning on the phone).
 
 ## Monorepo layout
 
@@ -10,7 +10,7 @@ Phone-as-a-scanner for your desktop: open Scan It on a computer, scan a pairing 
 |------|---------|
 | [`apps/web`](./apps/web) | TanStack Start app: `/` (landing), `/start`, `/desk/$publicId`, `/s/$publicId` (phone). Deploy on Vercel. |
 | [`apps/marketing`](./apps/marketing) | Static landing + download CTA. Deploy on Vercel (second project). |
-| [`apps/desktop`](./apps/desktop) | Tauri shell: same desk/home flows + **type into focused app** (Windows). |
+| [`apps/desktop`](./apps/desktop) | Tauri shell: same desk/home flows + **type into focused app** (Windows & macOS). |
 | [`packages/lib`](./packages/lib) | Shared helpers (`deskToken`, `deviceId`, `cn`, `getPairingOrigin`, `convexHttpSiteOrigin` for tab-close beacon). |
 | [`packages/features`](./packages/features) | Shared Home + Desk UI used by web and desktop. |
 | [`convex/`](./convex) | Convex schema and functions (stays at repo root). |
@@ -39,7 +39,10 @@ Phone-as-a-scanner for your desktop: open Scan It on a computer, scan a pairing 
 | `VITE_DEV_HTTPS` | Web (optional) | Set to `1` or `true` to prefer HTTPS in Vite dev. |
 | `VITE_DEV_SSL_DOMAINS` | Web (optional) | Extra hostnames for the dev TLS certificate (comma-separated). |
 | `VITE_DEV_PUBLIC_HOST` | Web, desktop (optional) | Hostname you open in the browser for dev (e.g. `fiwe-gsg3` or a LAN IP). Sets Vite HMR to use that host so hot reload works when you are not on `localhost`. |
-| `VITE_DESKTOP_DOWNLOAD_URL` | Marketing, **web** landing | URL of the portable Windows ZIP on GitHub Releases (download button on `/`). |
+| `VITE_DESKTOP_WINDOWS_INSTALLER_URL` | Marketing, **web** landing, desk | Optional override for Windows NSIS installer URL. |
+| `VITE_DESKTOP_WINDOWS_PORTABLE_URL` | Marketing, **web** landing, desk | Optional override for Windows portable ZIP URL. |
+| `VITE_DESKTOP_MAC_DMG_URL` | Marketing, **web** landing, desk | Optional override for macOS DMG URL. |
+| `VITE_DESKTOP_DOWNLOAD_URL` | Marketing, **web** landing, desk | Legacy: sets **primary** download button only; “All downloads” still use the three URLs above or GitHub `latest` defaults. |
 | `VITE_WEB_APP_URL` | Marketing | Public URL of the web app for the “Open web app” button. |
 
 Templates: [`.env.example`](./.env.example) (root, recommended), plus per-app reminders in [`apps/web/.env.example`](./apps/web/.env.example), [`apps/desktop/.env.example`](./apps/desktop/.env.example), and [`apps/marketing/.env.example`](./apps/marketing/.env.example).
@@ -94,7 +97,7 @@ Ensure root **`.env.local`** defines at least `VITE_CONVEX_URL` (and usually `VI
 npm run dev -w @scan-it/marketing
 ```
 
-Optional: set `VITE_WEB_APP_URL` and `VITE_DESKTOP_DOWNLOAD_URL` in root `.env.local`.
+Optional: set `VITE_WEB_APP_URL` and desktop download overrides in root `.env.local` (see env table).
 
 ### Desktop (Tauri) locally
 
@@ -126,7 +129,7 @@ Other useful commands:
 npm run build -w @scan-it/web
 npm run build -w @scan-it/marketing
 npm run build -w @scan-it/desktop    # Vite bundle only
-npm run build:desktop                 # Full Tauri Windows build → desktop.exe
+npm run build:desktop                 # Full Tauri build → scan-it.exe + NSIS (Windows) or DMG (macOS)
 npm start                             # Run built SSR server (after web build)
 ```
 
@@ -134,18 +137,26 @@ npm start                             # Run built SSR server (after web build)
 
 Use **two** projects, both with **Root Directory** set in the Vercel UI:
 
-1. **Web app** — Root Directory `apps/web`. The included [`apps/web/vercel.json`](./apps/web/vercel.json) installs from the monorepo root and builds `@scan-it/web`. Set **`VITE_CONVEX_URL`**, **`VITE_PAIRING_ORIGIN`** (production URL of this web deployment or your canonical URL), optional **`VITE_DESKTOP_DOWNLOAD_URL`** for the landing download button, and any dev/SSL vars if needed.
-2. **Marketing** — Root Directory `apps/marketing`. See [`apps/marketing/vercel.json`](./apps/marketing/vercel.json). Set **`VITE_DESKTOP_DOWNLOAD_URL`** and **`VITE_WEB_APP_URL`**.
+1. **Web app** — Root Directory `apps/web`. The included [`apps/web/vercel.json`](./apps/web/vercel.json) installs from the monorepo root and builds `@scan-it/web`. Set **`VITE_CONVEX_URL`**, **`VITE_PAIRING_ORIGIN`** (production URL of this web deployment or your canonical URL), optional **`VITE_DESKTOP_*`** URL overrides for download links, and any dev/SSL vars if needed.
+2. **Marketing** — Root Directory `apps/marketing`. See [`apps/marketing/vercel.json`](./apps/marketing/vercel.json). Set **`VITE_WEB_APP_URL`** and optional **`VITE_DESKTOP_*`** overrides.
 
 On Vercel, environment variables are configured in the project settings (there is no root `.env.local`); names are the same as in the table above.
 
 ## Desktop releases (GitHub Actions)
 
-Pushing a tag `v*` runs [`.github/workflows/release-desktop.yml`](.github/workflows/release-desktop.yml): builds the Windows app and attaches **`scan-it-windows-portable.zip`** (contains `desktop.exe`) to the GitHub Release.
+Pushing a tag `v*` runs [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml). It builds on **Windows** and **macOS** and uploads:
+
+| Asset | Contents |
+|-------|-----------|
+| `scan-it-windows-portable.zip` | `scan-it.exe` (no installer) |
+| `scan-it-windows-setup.exe` | NSIS installer (x64) |
+| `scan-it-macos.dmg` | macOS app (universal binary when the workflow succeeds) |
+
+Stable filenames are required for `https://github.com/<owner>/<repo>/releases/latest/download/<filename>` links on the marketing site and landing page.
 
 Configure repository **Variables** **`VITE_CONVEX_URL`** and **`VITE_PAIRING_ORIGIN`** so the embedded UI points at your Convex deployment and phone pairing URLs are correct.
 
-**Note:** Tauri bundling is off (`bundle.active: false`) so releases are a **portable executable** inside a ZIP, not an MSI/NSIS installer.
+**macOS:** CI builds are **not** code-signed or notarized; users may need to right-click → Open the first time. Add Apple signing in CI later if you want a smoother Gatekeeper experience.
 
 ## Style
 

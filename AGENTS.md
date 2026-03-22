@@ -84,13 +84,13 @@ npm run verify
 
 This runs web + marketing production builds, desktop `tsc`, and ESLint on `apps/web/src`, `packages/*`, and `convex/`. Fix all failures before merging.
 
-For a full desktop binary (local, Windows):
+For a full desktop binary (local, Windows or macOS):
 
 ```bash
 npm run build:desktop
 ```
 
-Requires Rust toolchain and Windows WebView2 runtime.
+Requires Rust toolchain. **Windows:** WebView2 runtime. **macOS:** system WebKit (no extra install).
 
 ## When editing docs
 
