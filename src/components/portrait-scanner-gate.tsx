@@ -37,7 +37,7 @@ export function PortraitScannerGate({ children }: { children: React.ReactNode })
   }, [])
 
   return (
-    <div className="relative">
+    <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         role={mustRotate ? 'alert' : undefined}
         aria-hidden={!mustRotate}

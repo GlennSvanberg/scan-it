@@ -151,9 +151,8 @@ function PhonePage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-lg flex-1 px-4 py-6">
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <PortraitScannerGate>
           <PhoneScanner publicId={publicId} deviceId={deviceId} />
         </PortraitScannerGate>

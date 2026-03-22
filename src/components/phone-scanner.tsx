@@ -4,7 +4,6 @@ import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
 import { api } from '../../convex/_generated/api'
 import type { Html5QrcodeCameraScanConfig } from 'html5-qrcode'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { cn } from '~/lib/utils'
 
 type Props = {
@@ -200,6 +199,111 @@ function advancedVideoConstraints(
   }
 }
 
+type VideoSettingsWithTorch = MediaTrackSettings & { torch?: boolean }
+
+function scannerVideoTrack(regionElementId: string): MediaStreamTrack | null {
+  if (typeof document === 'undefined') return null
+  const root = document.getElementById(regionElementId)
+  const video = root?.querySelector('video')
+  const src = video?.srcObject
+  if (src instanceof MediaStream) {
+    return src.getVideoTracks()[0] ?? null
+  }
+  return null
+}
+
+/** Try several constraint shapes; Chrome/Android and Safari differ. */
+async function applyTorchOnVideoTrack(
+  track: MediaStreamTrack,
+  on: boolean,
+): Promise<void> {
+  const attempts: Array<MediaTrackConstraints> = [
+    { advanced: [{ torch: on } as MediaTrackConstraintSet] },
+    { torch: on } as MediaTrackConstraints,
+    {
+      advanced: [
+        { torch: on, focusMode: 'continuous' } as MediaTrackConstraintSet,
+      ],
+    },
+  ]
+  let last: unknown
+  for (const c of attempts) {
+    try {
+      await track.applyConstraints(c)
+      return
+    } catch (e) {
+      last = e
+    }
+  }
+  throw last
+}
+
+/**
+ * Drive torch the same way html5-qrcode's built-in torch button does, with
+ * fallbacks when getCapabilities() omits `torch` but applyConstraints still works.
+ */
+async function setScannerTorch(
+  scanner: Html5Qrcode,
+  regionElementId: string,
+  on: boolean,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    const camCaps = scanner.getRunningTrackCameraCapabilities()
+    const torchFeat = camCaps.torchFeature()
+
+    let applied = false
+    const track = scannerVideoTrack(regionElementId)
+    if (track !== null) {
+      try {
+        await applyTorchOnVideoTrack(track, on)
+        applied = true
+      } catch {
+        // Fall through to html5-qrcode helpers — constraint shapes vary by browser.
+      }
+    }
+
+    if (!applied) {
+      if (torchFeat.isSupported()) {
+        await torchFeat.apply(on)
+      } else {
+        await scanner.applyVideoConstraints({
+          advanced: [{ torch: on } as MediaTrackConstraintSet],
+        } as MediaTrackConstraints)
+      }
+    }
+
+    const settings = scanner.getRunningTrackSettings() as VideoSettingsWithTorch
+    if (settings.torch === on) {
+      return { ok: true }
+    }
+    if (on && settings.torch === undefined) {
+      return { ok: true }
+    }
+    if (
+      !on &&
+      (settings.torch === false || settings.torch === undefined)
+    ) {
+      return { ok: true }
+    }
+
+    return {
+      ok: false,
+      message:
+        'The flashlight did not respond. Use Chrome on Android if you can — iOS and some browsers only support this in limited cases.',
+    }
+  } catch (e) {
+    const message =
+      e instanceof DOMException
+        ? `${e.name}: ${e.message}`
+        : e instanceof Error
+          ? e.message
+          : typeof e === 'string'
+            ? e
+            : 'Could not use the flashlight.'
+    return { ok: false, message }
+  }
+}
+
 export function PhoneScanner({ publicId, deviceId }: Props) {
   const submitScanMutation = useMutation(api.scanSessions.submitScan)
   const submitScanRef = React.useRef(submitScanMutation)
@@ -237,6 +341,8 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
     boolean | 'unknown'
   >('unknown')
   const [torchOn, setTorchOn] = React.useState(false)
+  const [torchToggling, setTorchToggling] = React.useState(false)
+  const [torchError, setTorchError] = React.useState<string | null>(null)
   const [queuedCount, setQueuedCount] = React.useState(0)
   const [lastFailedSubmit, setLastFailedSubmit] =
     React.useState<PendingScan | null>(null)
@@ -412,6 +518,8 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
     scanningActiveRef.current = false
     setTorchCapability('unknown')
     setTorchOn(false)
+    setTorchToggling(false)
+    setTorchError(null)
     await releaseWakeLock()
     const h = html5Ref.current
     if (h?.isScanning) {
@@ -440,6 +548,7 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
       setCameraError(null)
       setTorchOn(false)
       setTorchCapability('unknown')
+      setTorchError(null)
 
       let html5 = html5Ref.current
       if (html5 === null) {
@@ -463,13 +572,11 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
         viewfinderWidth,
         viewfinderHeight,
       ) => {
-        const el = containerRef.current
-        const w = el?.clientWidth ?? viewfinderWidth
         const cap = Math.max(Math.min(viewfinderWidth, viewfinderHeight), 1)
-        const raw = Math.round(
-          Math.min(Math.max(w * 0.88, 140), cap * 0.92, 340),
-        )
-        const side = Math.min(Math.max(raw, 50), cap)
+        // Large centered guide (library dims outside this box). No tiny 340px cap — full-screen
+        // layouts need a visibly obvious target on tall phones.
+        const target = Math.round(cap * 0.72)
+        const side = Math.min(Math.max(target, 160), Math.floor(cap * 0.92))
         return { width: side, height: side }
       }
 
@@ -657,16 +764,17 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
 
   const onToggleTorch = () => {
     const h = html5Ref.current
-    if (h === null || !h.isScanning) return
+    if (h === null || !h.isScanning || torchToggling) return
     const next = !torchOn
     void (async () => {
-      try {
-        await h.applyVideoConstraints({
-          advanced: [{ torch: next } as MediaTrackConstraintSet],
-        } as MediaTrackConstraints)
+      setTorchToggling(true)
+      setTorchError(null)
+      const result = await setScannerTorch(h, regionId, next)
+      setTorchToggling(false)
+      if (result.ok) {
         setTorchOn(next)
-      } catch {
-        // Unsupported or busy — leave torch off; user can retry
+      } else {
+        setTorchError(result.message)
       }
     })()
   }
@@ -694,83 +802,120 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
   }
 
   return (
-    <Card className="overflow-hidden border-primary/30">
-      <CardHeader>
-        <CardTitle>Scanner</CardTitle>
-        <p className="font-mono text-xs text-muted-foreground">
-          Point at barcodes or QR codes. Results appear on your computer.
+    <div className="flex min-h-0 flex-1 flex-col">
+      {(queuedCount > 0 || sendingQueued) && (
+        <p className="shrink-0 border-b border-amber-500/35 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-950 dark:text-amber-100">
+          {sendingQueued
+            ? 'Sending queued scans…'
+            : `Offline: ${queuedCount} queued — will send when online.`}
         </p>
-      </CardHeader>
-      <CardContent className="space-y-3 p-0">
-        {(queuedCount > 0 || sendingQueued) && (
-          <p className="border-l-2 border-amber-500/80 bg-amber-500/5 px-5 py-2 text-sm text-amber-900 dark:text-amber-100">
-            {sendingQueued
-              ? 'Sending queued scans…'
-              : `Queued offline: ${queuedCount} — will send when you are back online.`}
+      )}
+
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-black">
+        <div
+          ref={containerRef}
+          className={cn(
+            'relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+            scanFlash && !prefersReducedMotion && 'scanner-success-flash',
+          )}
+          onAnimationEnd={(e) => {
+            if (e.target !== e.currentTarget) return
+            if (e.animationName === 'scanner-success-ring') {
+              setScanFlash(false)
+            }
+          }}
+        >
+          <div
+            className="scanner-video-host min-h-0 min-w-0 flex-1 overflow-hidden"
+            id={regionId}
+          />
+          {/* Corner brackets aligned ~with html5-qrcode qrbox (large center target). */}
+          <div
+            className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center"
+            aria-hidden
+          >
+            <div className="scanner-target-brackets aspect-square w-[min(72vw,72vmin)] max-h-[55dvh] max-w-[min(72vw,420px)] shrink-0" />
+          </div>
+          {scanPreview ? (
+            <div
+              className="pointer-events-none absolute inset-x-2 bottom-2 z-[6] rounded-md border border-white/15 bg-black/80 px-2 py-1.5 shadow-lg backdrop-blur-sm"
+              key={scanPreview.key}
+            >
+              <p className="text-[10px] font-medium uppercase tracking-wide text-white/60">
+                Scanned
+              </p>
+              <p className="mt-0.5 max-h-24 overflow-y-auto break-all font-mono text-sm leading-snug text-white">
+                {scanPreview.value}
+              </p>
+            </div>
+          ) : null}
+        </div>
+        {cameraPhase === 'starting' && (
+          <p className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/50 text-sm text-white/90">
+            Starting camera…
           </p>
         )}
-        <div className="relative bg-black/80 px-2 pb-4 pt-2">
-          <div
-            ref={containerRef}
-            className={cn(
-              'relative mx-auto w-full max-w-sm rounded-lg',
-              scanFlash && !prefersReducedMotion && 'scanner-success-flash',
-            )}
-            onAnimationEnd={(e) => {
-              if (e.target !== e.currentTarget) return
-              if (e.animationName === 'scanner-success-ring') {
-                setScanFlash(false)
-              }
-            }}
-          >
-            <div
-              className="scanner-frame mx-auto aspect-square w-full overflow-hidden rounded-lg"
-              id={regionId}
-            />
-            {scanPreview ? (
-              <div
-                className="pointer-events-none absolute inset-x-1 bottom-1 z-[3] rounded-md border border-white/15 bg-black/80 px-2 py-1.5 shadow-lg backdrop-blur-sm"
-                key={scanPreview.key}
+        {cameraPhase === 'off' && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 px-4">
+            <Button type="button" onClick={onStartCamera} size="lg">
+              Start camera
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="shrink-0 border-t border-border bg-background/95 px-3 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[calc(1rem+env(safe-area-inset-bottom,0px)+28px)]">
+        {torchError ? (
+          <p className="mb-2 text-sm text-amber-950 dark:text-amber-100">
+            {torchError}
+          </p>
+        ) : null}
+        {cameraError ? (
+          <p className="mb-2 text-sm text-destructive">{cameraError}</p>
+        ) : null}
+        {submitError ? (
+          <div className="mb-2 space-y-2">
+            <p className="text-sm text-destructive">{submitError}</p>
+            {lastFailedSubmit !== null ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={onRetrySend}
               >
-                <p className="text-[10px] font-medium uppercase tracking-wide text-white/60">
-                  Scanned
-                </p>
-                <p className="mt-0.5 max-h-24 overflow-y-auto break-all font-mono text-sm leading-snug text-white">
-                  {scanPreview.value}
-                </p>
-              </div>
+                Retry send
+              </Button>
             ) : null}
           </div>
-          {cameraPhase === 'starting' && (
-            <p className="absolute inset-0 flex items-center justify-center text-sm text-white/80">
-              Starting camera…
-            </p>
-          )}
-          {cameraPhase === 'off' && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 px-4">
-              <Button type="button" onClick={onStartCamera} size="lg">
-                Start camera
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2 px-5 pb-2">
+        ) : null}
+        <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
           {cameraPhase === 'running' && (
             <>
-              <Button type="button" variant="secondary" onClick={onStopCamera}>
+              <Button
+                type="button"
+                className="min-h-11 w-full shrink-0 sm:min-w-0 sm:flex-1"
+                variant="secondary"
+                onClick={onStopCamera}
+              >
                 Stop camera
               </Button>
-              <Button type="button" variant="outline" onClick={onFlipCamera}>
+              <Button
+                type="button"
+                className="min-h-11 w-full min-w-0 shrink-0 sm:flex-1"
+                variant="outline"
+                onClick={onFlipCamera}
+              >
                 {facingMode === 'environment'
-                  ? 'Use front camera'
-                  : 'Use back camera'}
+                  ? 'Front camera'
+                  : 'Back camera'}
               </Button>
               {showFlashlightToggle ? (
                 <Button
                   type="button"
+                  className="min-h-11 w-full min-w-0 shrink-0 sm:flex-1"
                   variant={torchOn ? 'default' : 'outline'}
                   onClick={onToggleTorch}
+                  disabled={torchToggling}
                   title={
                     torchCapability === 'unknown'
                       ? 'Turn the phone flashlight on or off (if supported)'
@@ -783,29 +928,16 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
             </>
           )}
           {cameraPhase === 'error' && (
-            <Button type="button" onClick={onRetryCamera}>
+            <Button
+              type="button"
+              className="min-h-11 w-full sm:flex-1"
+              onClick={onRetryCamera}
+            >
               Retry camera
             </Button>
           )}
         </div>
-
-        {cameraError ? (
-          <p className="border-l-2 border-destructive px-5 py-2 text-sm text-destructive">
-            {cameraError}
-          </p>
-        ) : null}
-
-        {submitError ? (
-          <div className="space-y-2 border-l-2 border-destructive px-5 py-2">
-            <p className="text-sm text-destructive">{submitError}</p>
-            {lastFailedSubmit !== null ? (
-              <Button type="button" size="sm" variant="outline" onClick={onRetrySend}>
-                Retry send
-              </Button>
-            ) : null}
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
