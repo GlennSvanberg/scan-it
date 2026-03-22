@@ -16,3 +16,7 @@ export {
   type DeskScreenProps,
   type InjectSuffix,
 } from './screens/desk-screen.tsx'
+export {
+  PhonePairingScreen,
+  type PhonePairingScreenProps,
+} from './screens/phone-pairing-screen.tsx'

@@ -11,22 +11,28 @@ import viteReact from '@vitejs/plugin-react'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '../..')
 
-function sslExtraDomains(env: Record<string, string>): string[] {
-  const fromPairing = (() => {
+function hostnamesFromPairingEnv(env: Record<string, string>): string[] {
+  const keys = ['VITE_PAIRING_ORIGIN', 'VITE_DESKTOP_PAIRING_ORIGIN'] as const
+  const hosts: string[] = []
+  for (const key of keys) {
     try {
-      const u = env.VITE_PAIRING_ORIGIN?.trim()
-      if (!u) return []
+      const u = env[key]?.trim()
+      if (!u) continue
       const host = new URL(u).hostname
-      return host ? [host] : []
+      if (host) hosts.push(host)
     } catch {
-      return []
+      /* ignore */
     }
-  })()
+  }
+  return hosts
+}
+
+function sslExtraDomains(env: Record<string, string>): string[] {
   const fromEnv = (env.VITE_DEV_SSL_DOMAINS ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
-  return [...new Set([...fromPairing, ...fromEnv])]
+  return [...new Set([...hostnamesFromPairingEnv(env), ...fromEnv])]
 }
 
 export default defineConfig(({ mode }) => {

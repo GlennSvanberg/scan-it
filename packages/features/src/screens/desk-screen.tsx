@@ -5,26 +5,38 @@ import QRCode from 'react-qr-code'
 import * as React from 'react'
 import { api } from '@scan-it/convex-api'
 import {
+  ALL_BOOK_FIELD_IDS,
+  ALL_PRODUCT_FIELD_IDS,
   allDesktopDownloadRows,
   clearDeskToken,
   cn,
   convexHttpSiteOrigin,
   detectClientDesktopKind,
-  getPairingOrigin,
   getPrimaryDesktopDownloadHref,
   primaryDesktopDownloadLabel,
   readDeskToken,
   resolveDesktopDownloadUrls,
+  resolveOpenFactsEnrichmentLine,
+  resolveOpenLibraryEnrichmentLine,
+  resolvePairingBase,
   saveDeskToken,
 } from '@scan-it/lib'
 import { SiteHeader } from '../components/site-header.tsx'
+import { DeskOutputSettings } from '../components/desk-output-settings.tsx'
 import { Button } from '../components/ui/button.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.tsx'
+import type {
+  BookEnrichSeparator,
+  BookFieldId,
+  ProductFieldId,
+} from '@scan-it/lib'
 
 export type InjectSuffix = 'none' | 'enter' | 'tab'
 
 export type DeskInjectConfig = {
   injectScan: (text: string, suffix: InjectSuffix) => Promise<void>
+  /** Types each value and sends Tab between cells (Excel). Optional; falls back to `injectScan` with a joined line. */
+  injectFieldParts?: (parts: Array<string>, suffix: InjectSuffix) => Promise<void>
 }
 
 const INJECT_ENABLED_KEY = 'scan-it-inject-enabled'
@@ -49,6 +61,173 @@ function readInjectSuffix(): InjectSuffix {
 function writeInjectSuffix(s: InjectSuffix) {
   window.localStorage.setItem(INJECT_SUFFIX_KEY, s)
 }
+
+const BOOK_ENRICH_ENABLED_KEY = 'scan-it-book-enrich-enabled'
+const BOOK_ENRICH_FIELDS_KEY = 'scan-it-book-enrich-fields'
+const BOOK_ENRICH_SEPARATOR_KEY = 'scan-it-book-enrich-separator'
+const ENRICH_MODE_KEY = 'scan-it-enrich-mode'
+const ENRICH_SEPARATOR_KEY = 'scan-it-enrich-separator'
+const FOOD_ENRICH_FIELDS_KEY = 'scan-it-enrich-food-fields'
+const BEAUTY_ENRICH_FIELDS_KEY = 'scan-it-enrich-beauty-fields'
+
+export type EnrichMode = 'off' | 'book' | 'food' | 'beauty'
+
+function hasEnrichColumnsReady(
+  mode: EnrichMode,
+  bookCols: Array<BookFieldId>,
+  foodCols: Array<ProductFieldId>,
+  beautyCols: Array<ProductFieldId>,
+): boolean {
+  if (mode === 'off') return false
+  if (mode === 'book') return bookCols.length > 0
+  if (mode === 'food') return foodCols.length > 0
+  return beautyCols.length > 0
+}
+
+function migrateEnrichModeIfNeeded() {
+  if (typeof window === 'undefined') return
+  if (window.localStorage.getItem(ENRICH_MODE_KEY)) return
+  const legacyBook = window.localStorage.getItem(BOOK_ENRICH_ENABLED_KEY) === '1'
+  window.localStorage.setItem(ENRICH_MODE_KEY, legacyBook ? 'book' : 'off')
+}
+
+function readEnrichMode(): EnrichMode {
+  if (typeof window === 'undefined') return 'off'
+  migrateEnrichModeIfNeeded()
+  const m = window.localStorage.getItem(ENRICH_MODE_KEY)
+  if (m === 'book' || m === 'food' || m === 'beauty' || m === 'off') return m
+  return 'off'
+}
+
+function writeEnrichMode(mode: EnrichMode) {
+  window.localStorage.setItem(ENRICH_MODE_KEY, mode)
+  window.localStorage.setItem(BOOK_ENRICH_ENABLED_KEY, mode === 'book' ? '1' : '0')
+}
+
+function readEnrichSeparator(): BookEnrichSeparator {
+  if (typeof window === 'undefined') return '\t'
+  const v = window.localStorage.getItem(ENRICH_SEPARATOR_KEY)
+  if (v === ',') return ','
+  if (v === 'tab') return '\t'
+  const legacy = window.localStorage.getItem(BOOK_ENRICH_SEPARATOR_KEY)
+  return legacy === ',' ? ',' : '\t'
+}
+
+function writeEnrichSeparator(s: BookEnrichSeparator) {
+  const stored = s === ',' ? ',' : 'tab'
+  window.localStorage.setItem(ENRICH_SEPARATOR_KEY, stored)
+  window.localStorage.setItem(BOOK_ENRICH_SEPARATOR_KEY, stored)
+}
+
+function isBookFieldId(x: string): x is BookFieldId {
+  return (ALL_BOOK_FIELD_IDS as ReadonlyArray<string>).includes(x)
+}
+
+function parseBookFieldColumns(raw: string | null): Array<BookFieldId> {
+  if (!raw) return [...ALL_BOOK_FIELD_IDS]
+  try {
+    const a = JSON.parse(raw) as unknown
+    if (!Array.isArray(a)) return [...ALL_BOOK_FIELD_IDS]
+    const out: Array<BookFieldId> = []
+    const seen = new Set<BookFieldId>()
+    for (const x of a) {
+      if (typeof x === 'string' && isBookFieldId(x) && !seen.has(x)) {
+        seen.add(x)
+        out.push(x)
+      }
+    }
+    return out.length > 0 ? out : [...ALL_BOOK_FIELD_IDS]
+  } catch {
+    return [...ALL_BOOK_FIELD_IDS]
+  }
+}
+
+function readBookFieldColumns(): Array<BookFieldId> {
+  if (typeof window === 'undefined') return [...ALL_BOOK_FIELD_IDS]
+  return parseBookFieldColumns(window.localStorage.getItem(BOOK_ENRICH_FIELDS_KEY))
+}
+
+function writeBookFieldColumns(cols: Array<BookFieldId>) {
+  window.localStorage.setItem(BOOK_ENRICH_FIELDS_KEY, JSON.stringify(cols))
+}
+
+function isProductFieldId(x: string): x is ProductFieldId {
+  return (ALL_PRODUCT_FIELD_IDS as ReadonlyArray<string>).includes(x)
+}
+
+function parseProductFieldColumns(raw: string | null): Array<ProductFieldId> {
+  if (!raw) return [...ALL_PRODUCT_FIELD_IDS]
+  try {
+    const a = JSON.parse(raw) as unknown
+    if (!Array.isArray(a)) return [...ALL_PRODUCT_FIELD_IDS]
+    const out: Array<ProductFieldId> = []
+    const seen = new Set<ProductFieldId>()
+    for (const x of a) {
+      if (typeof x === 'string' && isProductFieldId(x) && !seen.has(x)) {
+        seen.add(x)
+        out.push(x)
+      }
+    }
+    return out.length > 0 ? out : [...ALL_PRODUCT_FIELD_IDS]
+  } catch {
+    return [...ALL_PRODUCT_FIELD_IDS]
+  }
+}
+
+function readFoodFieldColumns(): Array<ProductFieldId> {
+  if (typeof window === 'undefined') return [...ALL_PRODUCT_FIELD_IDS]
+  return parseProductFieldColumns(window.localStorage.getItem(FOOD_ENRICH_FIELDS_KEY))
+}
+
+function writeFoodFieldColumns(cols: Array<ProductFieldId>) {
+  window.localStorage.setItem(FOOD_ENRICH_FIELDS_KEY, JSON.stringify(cols))
+}
+
+function readBeautyFieldColumns(): Array<ProductFieldId> {
+  if (typeof window === 'undefined') return [...ALL_PRODUCT_FIELD_IDS]
+  return parseProductFieldColumns(window.localStorage.getItem(BEAUTY_ENRICH_FIELDS_KEY))
+}
+
+function writeBeautyFieldColumns(cols: Array<ProductFieldId>) {
+  window.localStorage.setItem(BEAUTY_ENRICH_FIELDS_KEY, JSON.stringify(cols))
+}
+
+async function resolveDeskEnrichment(
+  mode: EnrichMode,
+  raw: string,
+  bookCols: Array<BookFieldId>,
+  foodCols: Array<ProductFieldId>,
+  beautyCols: Array<ProductFieldId>,
+  separator: BookEnrichSeparator,
+  signal?: AbortSignal,
+): Promise<{ line: string; parts: Array<string>; found: boolean }> {
+  if (mode === 'off') {
+    return { line: raw, parts: [raw], found: true }
+  }
+  if (mode === 'book') {
+    const r = await resolveOpenLibraryEnrichmentLine(raw, bookCols, separator, {
+      signal,
+    })
+    return { line: r.line, parts: r.values, found: r.found }
+  }
+  if (mode === 'food') {
+    const r = await resolveOpenFactsEnrichmentLine(raw, 'food', foodCols, separator, {
+      signal,
+    })
+    return { line: r.line, parts: r.values, found: r.found }
+  }
+  const r = await resolveOpenFactsEnrichmentLine(
+    raw,
+    'beauty',
+    beautyCols,
+    separator,
+    { signal },
+  )
+  return { line: r.line, parts: r.values, found: r.found }
+}
+
+type EnrichedScanOutput = { line: string; parts: Array<string>; found: boolean }
+export type EnrichUiStatus = 'idle' | 'loading' | 'not_found' | 'error'
 
 function isSameLocalCalendarDay(a: Date, b: Date): boolean {
   return (
@@ -108,6 +287,9 @@ export type DeskScreenProps = {
 }
 
 export function DeskScreen({ publicId, inject }: DeskScreenProps) {
+  const injectRef = React.useRef(inject)
+  injectRef.current = inject
+
   const navigate = useNavigate()
   const [storageReady, setStorageReady] = React.useState(false)
   const [deskToken, setDeskToken] = React.useState<string | null>(null)
@@ -118,6 +300,33 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
   const [clipboardHint, setClipboardHint] = React.useState<string | null>(null)
   const [typeIntoApp, setTypeIntoApp] = React.useState(false)
   const [injectSuffix, setInjectSuffix] = React.useState<InjectSuffix>('enter')
+  const [enrichMode, setEnrichMode] = React.useState<EnrichMode>('off')
+  const [bookFieldColumns, setBookFieldColumns] = React.useState<Array<BookFieldId>>(() => [
+    ...ALL_BOOK_FIELD_IDS,
+  ])
+  const [foodFieldColumns, setFoodFieldColumns] = React.useState<Array<ProductFieldId>>(() => [
+    ...ALL_PRODUCT_FIELD_IDS,
+  ])
+  const [beautyFieldColumns, setBeautyFieldColumns] = React.useState<Array<ProductFieldId>>(
+    () => [...ALL_PRODUCT_FIELD_IDS],
+  )
+  const [enrichSeparator, setEnrichSeparator] =
+    React.useState<BookEnrichSeparator>('\t')
+  const [enrichStatus, setEnrichStatus] = React.useState<EnrichUiStatus>('idle')
+  const [enrichedDataByScanId, setEnrichedDataByScanId] = React.useState<
+    Record<string, { line: string; parts: Array<string> }>
+  >({})
+
+  const enrichedByScanIdRef = React.useRef(new Map<string, EnrichedScanOutput>())
+
+  React.useEffect(() => {
+    setEnrichedDataByScanId({})
+  }, [publicId])
+
+  React.useEffect(() => {
+    enrichedByScanIdRef.current.clear()
+    setEnrichedDataByScanId({})
+  }, [enrichMode])
 
   const publicIdRef = React.useRef(publicId)
   const deskTokenRef = React.useRef<string | null>(null)
@@ -134,6 +343,11 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
     if (inject) {
       setTypeIntoApp(readInjectEnabled())
       setInjectSuffix(readInjectSuffix())
+      setEnrichMode(readEnrichMode())
+      setBookFieldColumns(readBookFieldColumns())
+      setFoodFieldColumns(readFoodFieldColumns())
+      setBeautyFieldColumns(readBeautyFieldColumns())
+      setEnrichSeparator(readEnrichSeparator())
     }
   }, [publicId, inject])
 
@@ -152,9 +366,13 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
     })
   }, [data])
 
-  const base = getPairingOrigin(
-    import.meta.env as { VITE_PAIRING_ORIGIN?: string },
+  const base = resolvePairingBase(
+    import.meta.env as {
+      VITE_PAIRING_ORIGIN?: string
+      VITE_DESKTOP_PAIRING_ORIGIN?: string
+    },
     typeof window !== 'undefined' ? window.location.origin : '',
+    { desktopDesk: Boolean(inject) },
   )
   const pairUrl = base ? `${base}/s/${publicId}` : ''
 
@@ -194,42 +412,152 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
   }, [deskToken])
 
   React.useEffect(() => {
-    if (data === undefined || data === null || !scanToClipboard) return
+    if (data === undefined || data === null) return
     const scans = scansNewestFirst
     if (scans.length === 0) {
       clipboardPrimed.current = true
+      injectPrimed.current = true
       return
     }
     const latest = scans[0]
-    if (!clipboardPrimed.current) {
-      clipboardPrimed.current = true
-      lastClipboardId.current = latest._id
-      return
-    }
-    if (latest._id !== lastClipboardId.current) {
-      lastClipboardId.current = latest._id
-      void navigator.clipboard.writeText(latest.value).catch(() => {})
-    }
-  }, [data, scanToClipboard, scansNewestFirst])
 
-  React.useEffect(() => {
-    if (!inject || !typeIntoApp || data === undefined || data === null) return
-    const scans = scansNewestFirst
-    if (scans.length === 0) {
-      injectPrimed.current = true
-      return
+    if (scanToClipboard) {
+      if (!clipboardPrimed.current) {
+        clipboardPrimed.current = true
+        lastClipboardId.current = latest._id
+      }
     }
-    const latest = scans[0]
-    if (!injectPrimed.current) {
-      injectPrimed.current = true
-      lastInjectId.current = latest._id
-      return
+    const inj = injectRef.current
+    if (inj && typeIntoApp) {
+      if (!injectPrimed.current) {
+        injectPrimed.current = true
+        lastInjectId.current = latest._id
+      }
     }
-    if (latest._id !== lastInjectId.current) {
-      lastInjectId.current = latest._id
-      void inject.injectScan(latest.value, injectSuffix).catch(() => {})
-    }
-  }, [data, inject, typeIntoApp, injectSuffix, scansNewestFirst])
+
+    const shouldClipboard =
+      scanToClipboard &&
+      clipboardPrimed.current &&
+      latest._id !== lastClipboardId.current
+    const shouldInject =
+      Boolean(inj && typeIntoApp) &&
+      injectPrimed.current &&
+      latest._id !== lastInjectId.current
+
+    const useEnrich =
+      Boolean(inj) &&
+      hasEnrichColumnsReady(
+        enrichMode,
+        bookFieldColumns,
+        foodFieldColumns,
+        beautyFieldColumns,
+      )
+
+    if (!shouldClipboard && !shouldInject && !useEnrich) return
+
+    const capturedId = latest._id
+    const capturedRaw = latest.value
+    const ac = new AbortController()
+
+    void (async () => {
+      if (useEnrich) setEnrichStatus('loading')
+      let out: EnrichedScanOutput
+      try {
+        if (!useEnrich) {
+          out = { line: capturedRaw, parts: [capturedRaw], found: true }
+        } else {
+          out = await resolveDeskEnrichment(
+            enrichMode,
+            capturedRaw,
+            bookFieldColumns,
+            foodFieldColumns,
+            beautyFieldColumns,
+            enrichSeparator,
+            ac.signal,
+          )
+        }
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') return
+        if (ac.signal.aborted) return
+        out = { line: capturedRaw, parts: [capturedRaw], found: false }
+        if (useEnrich) setEnrichStatus('error')
+        if (shouldClipboard) lastClipboardId.current = capturedId
+        if (shouldInject && inj) lastInjectId.current = capturedId
+        enrichedByScanIdRef.current.set(capturedId, out)
+        if (useEnrich) {
+          setEnrichedDataByScanId((prev) => ({
+            ...prev,
+            [capturedId]: { line: out.line, parts: out.parts },
+          }))
+        }
+        if (shouldClipboard) {
+          void navigator.clipboard.writeText(out.line).catch(() => {})
+        }
+        if (shouldInject && inj) {
+          try {
+            if (
+              enrichSeparator === '\t' &&
+              out.parts.length > 1 &&
+              inj.injectFieldParts
+            ) {
+              await inj.injectFieldParts(out.parts, injectSuffix)
+            } else {
+              await inj.injectScan(out.line, injectSuffix)
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+        return
+      }
+
+      if (ac.signal.aborted) return
+
+      enrichedByScanIdRef.current.set(capturedId, out)
+      if (useEnrich) {
+        setEnrichedDataByScanId((prev) => ({
+          ...prev,
+          [capturedId]: { line: out.line, parts: out.parts },
+        }))
+      }
+      if (useEnrich) setEnrichStatus(out.found ? 'idle' : 'not_found')
+      else setEnrichStatus('idle')
+
+      if (shouldClipboard) {
+        void navigator.clipboard.writeText(out.line).catch(() => {})
+        lastClipboardId.current = capturedId
+      }
+      if (shouldInject && inj) {
+        try {
+          if (
+            enrichSeparator === '\t' &&
+            out.parts.length > 1 &&
+            inj.injectFieldParts
+          ) {
+            await inj.injectFieldParts(out.parts, injectSuffix)
+          } else {
+            await inj.injectScan(out.line, injectSuffix)
+          }
+        } catch {
+          /* ignore */
+        }
+        lastInjectId.current = capturedId
+      }
+    })()
+
+    return () => ac.abort()
+  }, [
+    data,
+    scansNewestFirst,
+    scanToClipboard,
+    typeIntoApp,
+    injectSuffix,
+    enrichMode,
+    bookFieldColumns,
+    foodFieldColumns,
+    beautyFieldColumns,
+    enrichSeparator,
+  ])
 
   const onScanToClipboardChange = (checked: boolean) => {
     setScanToClipboard(checked)
@@ -264,13 +592,173 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
     writeInjectSuffix(s)
   }
 
-  const onCopyLatest = () => {
+  const onEnrichModeChange = (mode: EnrichMode) => {
+    setEnrichMode(mode)
+    writeEnrichMode(mode)
+    setEnrichStatus('idle')
+  }
+
+  const onEnrichSeparatorChange = (s: BookEnrichSeparator) => {
+    setEnrichSeparator(s)
+    writeEnrichSeparator(s)
+  }
+
+  const moveBookField = React.useCallback((index: number, dir: -1 | 1) => {
+    setBookFieldColumns((prev) => {
+      const j = index + dir
+      if (j < 0 || j >= prev.length) return prev
+      const next = [...prev]
+      ;[next[index], next[j]] = [next[j], next[index]]
+      writeBookFieldColumns(next)
+      return next
+    })
+  }, [])
+
+  const removeBookField = React.useCallback((id: BookFieldId) => {
+    setBookFieldColumns((prev) => {
+      if (prev.length <= 1) return prev
+      const next = prev.filter((x) => x !== id)
+      const saved: Array<BookFieldId> =
+        next.length > 0 ? next : ['scannedCode']
+      writeBookFieldColumns(saved)
+      return saved
+    })
+  }, [])
+
+  const addBookField = React.useCallback((id: BookFieldId) => {
+    setBookFieldColumns((prev) => {
+      if (prev.includes(id)) return prev
+      const next = [...prev, id]
+      writeBookFieldColumns(next)
+      return next
+    })
+  }, [])
+
+  const moveFoodField = React.useCallback((index: number, dir: -1 | 1) => {
+    setFoodFieldColumns((prev) => {
+      const j = index + dir
+      if (j < 0 || j >= prev.length) return prev
+      const next = [...prev]
+      ;[next[index], next[j]] = [next[j], next[index]]
+      writeFoodFieldColumns(next)
+      return next
+    })
+  }, [])
+
+  const removeFoodField = React.useCallback((id: ProductFieldId) => {
+    setFoodFieldColumns((prev) => {
+      if (prev.length <= 1) return prev
+      const next = prev.filter((x) => x !== id)
+      const saved: Array<ProductFieldId> =
+        next.length > 0 ? next : ['scannedCode']
+      writeFoodFieldColumns(saved)
+      return saved
+    })
+  }, [])
+
+  const addFoodField = React.useCallback((id: ProductFieldId) => {
+    setFoodFieldColumns((prev) => {
+      if (prev.includes(id)) return prev
+      const next = [...prev, id]
+      writeFoodFieldColumns(next)
+      return next
+    })
+  }, [])
+
+  const moveBeautyField = React.useCallback((index: number, dir: -1 | 1) => {
+    setBeautyFieldColumns((prev) => {
+      const j = index + dir
+      if (j < 0 || j >= prev.length) return prev
+      const next = [...prev]
+      ;[next[index], next[j]] = [next[j], next[index]]
+      writeBeautyFieldColumns(next)
+      return next
+    })
+  }, [])
+
+  const removeBeautyField = React.useCallback((id: ProductFieldId) => {
+    setBeautyFieldColumns((prev) => {
+      if (prev.length <= 1) return prev
+      const next = prev.filter((x) => x !== id)
+      const saved: Array<ProductFieldId> =
+        next.length > 0 ? next : ['scannedCode']
+      writeBeautyFieldColumns(saved)
+      return saved
+    })
+  }, [])
+
+  const addBeautyField = React.useCallback((id: ProductFieldId) => {
+    setBeautyFieldColumns((prev) => {
+      if (prev.includes(id)) return prev
+      const next = [...prev, id]
+      writeBeautyFieldColumns(next)
+      return next
+    })
+  }, [])
+
+  const bookFieldsAvailableToAdd = React.useMemo(
+    () => ALL_BOOK_FIELD_IDS.filter((id) => !bookFieldColumns.includes(id)),
+    [bookFieldColumns],
+  )
+
+  const foodFieldsAvailableToAdd = React.useMemo(
+    () => ALL_PRODUCT_FIELD_IDS.filter((id) => !foodFieldColumns.includes(id)),
+    [foodFieldColumns],
+  )
+
+  const beautyFieldsAvailableToAdd = React.useMemo(
+    () => ALL_PRODUCT_FIELD_IDS.filter((id) => !beautyFieldColumns.includes(id)),
+    [beautyFieldColumns],
+  )
+
+  const onCopyLatest = React.useCallback(() => {
     if (data === undefined || data === null) return
     const scans = scansNewestFirst
     if (scans.length === 0) return
     const latest = scans[0]
-    void navigator.clipboard.writeText(latest.value)
-  }
+    const cached = enrichedByScanIdRef.current.get(latest._id)
+    if (cached) {
+      void navigator.clipboard.writeText(cached.line)
+      return
+    }
+    const enrichActive =
+      Boolean(inject) &&
+      hasEnrichColumnsReady(
+        enrichMode,
+        bookFieldColumns,
+        foodFieldColumns,
+        beautyFieldColumns,
+      )
+    if (!enrichActive) {
+      void navigator.clipboard.writeText(latest.value)
+      return
+    }
+    void (async () => {
+      try {
+        const out = await resolveDeskEnrichment(
+          enrichMode,
+          latest.value,
+          bookFieldColumns,
+          foodFieldColumns,
+          beautyFieldColumns,
+          enrichSeparator,
+        )
+        enrichedByScanIdRef.current.set(latest._id, out)
+        void navigator.clipboard.writeText(out.line)
+      } catch {
+        void navigator.clipboard.writeText(latest.value)
+      }
+    })()
+  }, [
+    data,
+    scansNewestFirst,
+    inject,
+    enrichMode,
+    bookFieldColumns,
+    foodFieldColumns,
+    beautyFieldColumns,
+    enrichSeparator,
+  ])
 
   const [copiedRowId, setCopiedRowId] = React.useState<string | null>(null)
   const copyFeedbackRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -281,16 +769,66 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
     }
   }, [])
 
-  const onCopyRowValue = React.useCallback((rowId: string, value: string) => {
-    void navigator.clipboard.writeText(value).then(() => {
-      if (copyFeedbackRef.current) clearTimeout(copyFeedbackRef.current)
-      setCopiedRowId(rowId)
-      copyFeedbackRef.current = setTimeout(() => {
-        setCopiedRowId(null)
-        copyFeedbackRef.current = null
-      }, 2000)
-    })
+  const showCopyFeedback = React.useCallback((rowId: string) => {
+    if (copyFeedbackRef.current) clearTimeout(copyFeedbackRef.current)
+    setCopiedRowId(rowId)
+    copyFeedbackRef.current = setTimeout(() => {
+      setCopiedRowId(null)
+      copyFeedbackRef.current = null
+    }, 2000)
   }, [])
+
+  const onCopyRowValue = React.useCallback(
+    (rowId: string, value: string) => {
+      const finish = (text: string) => {
+        void navigator.clipboard.writeText(text).then(() => {
+          showCopyFeedback(rowId)
+        })
+      }
+      const cached = enrichedByScanIdRef.current.get(rowId)
+      if (cached) {
+        finish(cached.line)
+        return
+      }
+      const enrichActive =
+        Boolean(inject) &&
+        hasEnrichColumnsReady(
+          enrichMode,
+          bookFieldColumns,
+          foodFieldColumns,
+          beautyFieldColumns,
+        )
+      if (!enrichActive) {
+        finish(value)
+        return
+      }
+      void (async () => {
+        try {
+          const out = await resolveDeskEnrichment(
+            enrichMode,
+            value,
+            bookFieldColumns,
+            foodFieldColumns,
+            beautyFieldColumns,
+            enrichSeparator,
+          )
+          enrichedByScanIdRef.current.set(rowId, out)
+          finish(out.line)
+        } catch {
+          finish(value)
+        }
+      })()
+    },
+    [
+      inject,
+      enrichMode,
+      bookFieldColumns,
+      foodFieldColumns,
+      beautyFieldColumns,
+      enrichSeparator,
+      showCopyFeedback,
+    ],
+  )
 
   const leaveToHome = React.useCallback(async () => {
     const tok = readDeskToken(publicId) ?? deskTokenRef.current
@@ -383,6 +921,15 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
   const ended = data.status === 'ended'
   const paired = data.devicePaired
 
+  const enrichHasMultipleColumns =
+    enrichMode === 'book'
+      ? bookFieldColumns.length > 1
+      : enrichMode === 'food'
+        ? foodFieldColumns.length > 1
+        : enrichMode === 'beauty'
+          ? beautyFieldColumns.length > 1
+          : false
+
   if (!paired) {
     return (
       <div className="flex min-h-dvh flex-col">
@@ -438,67 +985,43 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
             </details>
 
             <div className="flex flex-col gap-3">
-              <label className="flex cursor-pointer items-start gap-3 text-sm">
-                <input
-                  type="checkbox"
-                  checked={scanToClipboard}
-                  disabled={ended}
-                  onChange={(e) => onScanToClipboardChange(e.target.checked)}
-                  className="mt-0.5 size-4 shrink-0 rounded border-border accent-primary"
-                />
-                <span className="text-foreground">
-                  <span className="font-medium">Scan to clipboard</span>
-                  <span className="mt-0.5 block text-muted-foreground">
-                    When on, each new scan copies to the clipboard. Your browser
-                    may ask for permission when you enable this.
-                  </span>
-                  {clipboardHint ? (
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      {clipboardHint}
-                    </span>
-                  ) : null}
-                </span>
-              </label>
-
-              {inject ? (
-                <div className="flex flex-col gap-2 rounded-lg border border-border/60 p-4">
-                  <label className="flex cursor-pointer items-start gap-3 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={typeIntoApp}
-                      disabled={ended}
-                      onChange={(e) => onTypeIntoAppChange(e.target.checked)}
-                      className="mt-0.5 size-4 shrink-0 rounded border-border accent-primary"
-                    />
-                    <span className="text-foreground">
-                      <span className="font-medium">Type into focused app</span>
-                      <span className="mt-0.5 block text-muted-foreground">
-                        Sends each new scan as keystrokes to whichever window is
-                        focused (e.g. Excel). Click the target field first.
-                      </span>
-                    </span>
-                  </label>
-                  {typeIntoApp ? (
-                    <label className="mt-1 flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-foreground">
-                        After each scan
-                      </span>
-                      <select
-                        value={injectSuffix}
-                        disabled={ended}
-                        onChange={(e) =>
-                          onInjectSuffixChange(e.target.value as InjectSuffix)
-                        }
-                        className="rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
-                      >
-                        <option value="none">Nothing</option>
-                        <option value="enter">Press Enter</option>
-                        <option value="tab">Press Tab</option>
-                      </select>
-                    </label>
-                  ) : null}
-                </div>
-              ) : null}
+              <DeskOutputSettings
+                ended={ended}
+                scanToClipboard={scanToClipboard}
+                onScanToClipboardChange={onScanToClipboardChange}
+                clipboardHint={clipboardHint}
+                inject={inject}
+                typeIntoApp={typeIntoApp}
+                onTypeIntoAppChange={onTypeIntoAppChange}
+                injectSuffix={injectSuffix}
+                onInjectSuffixChange={onInjectSuffixChange}
+                enrichMode={enrichMode}
+                onEnrichModeChange={onEnrichModeChange}
+                enrichSeparator={enrichSeparator}
+                onEnrichSeparatorChange={onEnrichSeparatorChange}
+                enrichHasMultipleColumns={enrichHasMultipleColumns}
+                bookFieldColumns={bookFieldColumns}
+                bookFieldsAvailableToAdd={bookFieldsAvailableToAdd}
+                moveBookField={moveBookField}
+                removeBookField={removeBookField}
+                addBookField={addBookField}
+                foodFieldColumns={foodFieldColumns}
+                foodFieldsAvailableToAdd={foodFieldsAvailableToAdd}
+                moveFoodField={moveFoodField}
+                removeFoodField={removeFoodField}
+                addFoodField={addFoodField}
+                beautyFieldColumns={beautyFieldColumns}
+                beautyFieldsAvailableToAdd={beautyFieldsAvailableToAdd}
+                moveBeautyField={moveBeautyField}
+                removeBeautyField={removeBeautyField}
+                addBeautyField={addBeautyField}
+                enrichStatus={enrichStatus}
+                latestScanEnriched={
+                  scansNewestFirst.length > 0
+                    ? enrichedDataByScanId[scansNewestFirst[0]._id] ?? null
+                    : null
+                }
+              />
 
               <div className="flex flex-wrap gap-3">
                 <Button
@@ -535,6 +1058,12 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
                   <ul className="divide-y divide-border">
                     {scansNewestFirst.map((row) => {
                       const isLatest = row._id === scansNewestFirst[0]._id
+                      const enrichLogLine =
+                        inject && enrichMode !== 'off'
+                          ? Object.hasOwn(enrichedDataByScanId, row._id)
+                            ? enrichedDataByScanId[row._id].line
+                            : null
+                          : null
                       return (
                       <li
                         key={row._id}
@@ -546,9 +1075,22 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
                         )}
                       >
                         <div className="min-w-0 flex-1 py-1">
-                          <span className="block break-all text-foreground">
-                            {row.value}
-                          </span>
+                          {enrichLogLine !== null ? (
+                            <>
+                              <span className="block break-all text-foreground">
+                                {enrichLogLine}
+                              </span>
+                              {enrichLogLine !== row.value ? (
+                                <span className="mt-1 block break-all text-[11px] text-muted-foreground">
+                                  Raw scan: {row.value}
+                                </span>
+                              ) : null}
+                            </>
+                          ) : (
+                            <span className="block break-all text-foreground">
+                              {row.value}
+                            </span>
+                          )}
                           <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[10px] text-muted-foreground">
                             {row.format ? (
                               <span className="uppercase tracking-wider">
@@ -559,6 +1101,16 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
                               <span aria-hidden className="text-border">
                                 ·
                               </span>
+                            ) : null}
+                            {enrichLogLine !== null && enrichLogLine !== row.value ? (
+                              <>
+                                <span className="rounded-sm bg-primary/10 px-1 py-0.5 font-medium text-primary">
+                                  Enriched
+                                </span>
+                                <span aria-hidden className="text-border">
+                                  ·
+                                </span>
+                              </>
                             ) : null}
                             <time
                               dateTime={new Date(row.createdAt).toISOString()}
@@ -609,7 +1161,8 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
                   <span className="font-medium text-foreground">desktop app</span>{' '}
                   can also type each new scan into{' '}
                   <span className="text-foreground">whatever program is focused</span>
-                  —for example Excel or other line-of-business tools. On macOS you
+                  —for example Excel or other line-of-business tools—and can
+                  automatically fill in product or book details from public databases. On macOS you
                   may need to grant Accessibility permission for keystrokes.
                 </p>
                 <div className="flex flex-col gap-2">

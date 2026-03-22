@@ -2,8 +2,8 @@ import { useMutation } from 'convex/react'
 import * as React from 'react'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
 import { api } from '@scan-it/convex-api'
-import { Button } from '@scan-it/features'
 import { cn } from '@scan-it/lib'
+import { Button } from './ui/button.tsx'
 import type { Html5QrcodeCameraScanConfig } from 'html5-qrcode'
 
 type Props = {

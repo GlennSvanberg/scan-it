@@ -10,8 +10,8 @@ Phone-as-a-scanner for your desktop: open Scan It on a computer, scan a pairing 
 |------|---------|
 | [`apps/web`](./apps/web) | TanStack Start app: `/` (landing), `/start`, `/desk/$publicId`, `/s/$publicId` (phone). Deploy on Vercel. |
 | [`apps/marketing`](./apps/marketing) | Static landing + download CTA. Deploy on Vercel (second project). |
-| [`apps/desktop`](./apps/desktop) | Tauri shell: same desk/home flows + **type into focused app** (Windows & macOS). |
-| [`packages/lib`](./packages/lib) | Shared helpers (`deskToken`, `deviceId`, `cn`, `getPairingOrigin`, `convexHttpSiteOrigin` for tab-close beacon). |
+| [`apps/desktop`](./apps/desktop) | Tauri shell: same desk/home flows + **type into focused app** (Windows & macOS); optional **scan enrichment** on the desk (books via [Open Library](https://openlibrary.org/), food/beauty via [Open Food Facts](https://world.openfoodfacts.org/) / [Open Beauty Facts](https://world.openbeautyfacts.org/)). |
+| [`packages/lib`](./packages/lib) | Shared helpers (`deskToken`, `deviceId`, `cn`, pairing, beacon) plus desk enrichment: ISBN → [`open-library.ts`](./packages/lib/src/open-library.ts), GTIN → [`open-facts-product.ts`](./packages/lib/src/open-facts-product.ts). |
 | [`packages/features`](./packages/features) | Shared Home + Desk UI used by web and desktop. |
 | [`convex/`](./convex) | Convex schema and functions (stays at repo root). |
 
@@ -19,7 +19,7 @@ Phone-as-a-scanner for your desktop: open Scan It on a computer, scan a pairing 
 
 | Asset / concern | Location | Consumed by |
 |-----------------|----------|-------------|
-| Theme tokens, `ThemeProvider`, desk/home screens, header, button/card | `packages/features` | `apps/web`, `apps/desktop` |
+| Theme tokens, `ThemeProvider`, desk/home screens, header, button/card; desk **scan enrichment** UI (Open Library + Open * Facts) when `inject` is passed | `packages/features` | `apps/web`, `apps/desktop` |
 | Session/device helpers, `cn()`, pairing URL helper | `packages/lib` | `packages/features`, `apps/web` (phone route), `apps/desktop` |
 | Convex API types / `api` object | `convex/_generated/api` | Via Vite alias `@scan-it/convex-api` in apps; TS path in `packages/features` |
 | Phone scanner, portrait gate, scanner CSS utilities | `apps/web` only | Web app (not shipped in desktop) |
@@ -64,6 +64,34 @@ Templates: [`.env.example`](./.env.example) (root, recommended), plus per-app re
 - Anyone who can open the pairing URL **before** the real phone pairs could occupy the slot (same as sharing a secret link). Mitigations for later: short TTL, optional numeric PIN shown on the desk, etc.
 - The **desk token** is returned once from `createSession` and kept in **sessionStorage** for that tab; it is required to read the session or end it from the desk UI.
 - Clipboard auto-copy runs only when **Scan to clipboard** is enabled (the browser may prompt then). Auto-copy on new scans may still be **blocked** in some environments; **Copy latest** is the reliable fallback.
+- **Desktop desk:** optional **scan enrichment** uses third-party read APIs ([Open Library](https://openlibrary.org/) for ISBN; [Open Food Facts](https://world.openfoodfacts.org/) / [Open Beauty Facts](https://world.openbeautyfacts.org/) for GTIN). See each project’s terms and [Open Food Facts data reuse](https://support.openfoodfacts.org/help/en-gb/12-api-data-reuse/94-are-there-conditions-to-use-the-api).
+
+## Desktop scan enrichment (Open Library + Open * Facts)
+
+The **Tauri desktop app** can turn each scan into **multiple columns** of metadata for Excel and other tools. You pick **one** enrichment source at a time: **Off**, **Books** (ISBN), **Food** (GTIN), or **Beauty** (GTIN). The **browser desk** does not offer this UI (it has no `inject` prop); enrichment is desktop-only.
+
+### What it does
+
+- **Books:** scans are normalized to **ISBN-13** when possible, then looked up with the [Books API](https://openlibrary.org/dev/docs/api/books) (`jscmd=data`, no API key). Canonical fields (title, authors, publishers, etc.) live in [`packages/lib/src/open-library.ts`](./packages/lib/src/open-library.ts).
+- **Food / beauty:** scans are normalized to a **GTIN** (EAN-8, EAN-13, GTIN-14, or UPC-A as 12 digits with a leading `0`), then looked up with the Product Opener JSON API: `GET …/api/v0/product/{code}.json` on [`world.openfoodfacts.org`](https://world.openfoodfacts.org/) or [`world.openbeautyfacts.org`](https://world.openbeautyfacts.org/) (no API key). Field IDs and labels are in [`packages/lib/src/open-facts-product.ts`](./packages/lib/src/open-facts-product.ts).
+- **Output** for every mode is a single line of values joined by **Tab** (default, for Excel columns) or **Comma**. Cell text is sanitized so tabs, commas, and newlines do not break the row.
+- **Clipboard:** if **Scan to clipboard** is on, that resolved line is what gets copied on each new scan.
+- **Typing:** if **Type into focused app** is on, the app uses **`inject_sequence`** in Rust to type each column and send **Tab** between cells when Tab is the separator and there is more than one column (see [`apps/desktop/src-tauri/src/lib.rs`](./apps/desktop/src-tauri/src/lib.rs)). Otherwise it types one string via **`inject_text`**.
+- **Log:** while enrichment is on, the log shows the **resolved line** as the main line; if it differs from the raw scan text, a **Raw scan** line appears underneath.
+
+### How to use it
+
+1. Open the **desktop** app, start a desk, pair the phone.
+2. Under **Scan enrichment**, choose **Books**, **Food**, or **Beauty** (or **Off**). Column settings are separate per mode and persist in `localStorage`. Legacy “book enrichment enabled” is migrated to **Books** when you first open the desk after updating.
+3. Choose **column separator** (Tab or comma) and **columns** (order, add/remove).
+4. Enable **Scan to clipboard** and/or **Type into focused app** as needed. For **multiple Excel columns** with Tab separation, set **After each scan** to **Nothing** or **Enter**, not **Tab**, or the extra Tab moves past the last cell (the UI explains this).
+5. Scan barcodes; invalid codes or unknown products still fill **Scanned code** and leave other columns empty where data is missing.
+
+### Implementation notes (for contributors)
+
+- **Convex** still stores only the raw scan string; all enrichment runs in the **desk WebView** (`fetch` to Open Library / Open * Facts). Use a descriptive app identity for Open * Facts requests where the runtime allows (see comment in [`open-facts-product.ts`](./packages/lib/src/open-facts-product.ts)); expect browser/WebView limits on custom `User-Agent` and keep volume modest.
+- The desk pipeline uses **`injectRef`** so a stable Tauri `inject` object does not retrigger effects and abort in-flight lookups on every render. The desktop router wraps `inject` in **`React.useMemo`** ([`apps/desktop/src/router.tsx`](./apps/desktop/src/router.tsx)).
+- **More categories** (music, games, etc.) should follow the same shape: **canonical field IDs + mapper + resolver** in `@scan-it/lib`, mode option in `DeskScreen` gated on `inject`, async resolution merged with clipboard/inject, and new Tauri commands only if keystroke behavior needs something beyond typing a joined string. Document new APIs’ terms of use in README and in-app where appropriate.
 
 ## Routes (web app)
 
