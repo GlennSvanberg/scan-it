@@ -17,26 +17,83 @@ A **minimal, no-login** scanner bridge:
 
 Do **not** add user auth for this product phase unless the human explicitly asks. Prefer extending the session + scan tables and documented security notes in README.
 
-### Convex conventions here
+## Monorepo map (where to edit)
+
+| If you are changing… | Edit here |
+|---------------------|-----------|
+| Convex schema / mutations / queries | `convex/` (repo root — never move) |
+| Shared TS utilities (tokens, device id, `cn`, pairing URL) | `packages/lib` — import as `@scan-it/lib` |
+| Home + Desk UI, theme, site chrome, shadcn-style primitives | `packages/features` — import as `@scan-it/features` |
+| Phone scanner, `/s/*` route, scanner-only CSS | `apps/web` only |
+| Start routes, SSR/router wiring, web-only assets | `apps/web` |
+| Tauri shell, Rust commands (`inject_text`), window config | `apps/desktop` |
+| Landing / download page | `apps/marketing` |
+
+**Rule of thumb:** If both the browser desk and the Tauri desk need the same screen or styling, put it in **`packages/features`** (or **`packages/lib`** for pure functions). If only the phone or only the web server needs it, keep it in **`apps/web`**.
+
+## Convex conventions here
 
 - Public API lives in `convex/scanSessions.ts` (and schema in `convex/schema.ts`).
 - **Validators** on every function; return `null` for “not found / wrong token” on desk read where appropriate.
 - **`Date.now()`** is acceptable in **mutations** for `createdAt`; avoid time-dependent logic in **queries** that should stay pure/cache-friendly (see Convex guideline on `Date.now()` in queries).
 - After schema changes, run **`npx convex dev`** or **`npx convex codegen`** so `_generated` types stay in sync.
 
-### Frontend conventions
+## Imports and build tooling
 
-- **TanStack Start** file routes under `src/routes/`. Desk and phone routes use **`ssr: false`** because they depend on `sessionStorage` / `localStorage` and the camera APIs.
-- UI: **Tailwind v4** + tokens in `src/styles/app.css`; compose with primitives in `src/components/ui/*` (shadcn-style, not necessarily the full CLI install).
-- **Theme:** `next-themes` in root (`ThemeProvider` in `src/routes/__root.tsx`); default **dark**; user can switch light/dark. Follow **`docs/STYLEGUIDE.md`** for accents and layout.
+### `@scan-it/lib`
 
-### QR and scanner libraries
+- **Allowed:** any package or app.
+- **Must not:** import from `convex`, `react`, or `packages/features` (keep it small and portable).
 
-- **Pairing QR (desktop):** `react-qr-code` only (per project decision).
-- **Phone camera:** `html5-qrcode`. Keep scanner lifecycle in a client-only component (`PhoneScanner`); clean up `stop()` on unmount.
+### `@scan-it/features`
 
-### When editing docs
+- May import **`convex/react`**, **`@tanstack/react-router`**, **`@scan-it/lib`**, and **`@scan-it/convex-api`** (path alias in `packages/features/tsconfig.json` → `convex/_generated/api`).
+- **Bundling:** `apps/web` and `apps/desktop` Vite configs alias `@scan-it/convex-api` to the real generated file at repo root so `packages/features` resolves during app builds.
+- **Do not** import from `apps/web` or `apps/desktop` (no upward dependency).
+
+### `apps/web` and `apps/desktop`
+
+- Use **`~/...`** for local app source only.
+- Import shared UI from **`@scan-it/features`**, helpers from **`@scan-it/lib`**, Convex **`api`** from **`@scan-it/convex-api`** in web phone code; features re-export primitives if routes need `Button`/`Card` without duplicating.
+
+### Environment variables
+
+- **Convex CLI:** expects `.env.local` at **repo root** when running `npx convex dev` from root.
+- **Vite:** all three apps set **`envDir`** to the **repo root**, so one root `.env.local` supplies `VITE_*` for web, desktop, and marketing dev servers. Document new `VITE_*` names in README and the relevant `apps/*/.env.example`.
+
+## Frontend conventions
+
+- **TanStack Start** file routes under `apps/web/src/routes/`. Desk and phone routes use **`ssr: false`** where they depend on `sessionStorage` / `localStorage` or the camera APIs.
+- **TanStack Router (SPA)** in `apps/desktop` defines the same **`/`** and **`/desk/$publicId`** tree programmatically in `apps/desktop/src/router.tsx` and passes **`inject`** into `DeskScreen` for Tauri keyboard injection.
+- **UI tokens:** `packages/features/src/styles/features.css`. **Web-only scanner utilities:** `apps/web/src/styles/app.css` (`@source` globs must reach the **repo root** from `apps/*/src/styles/`, e.g. `../../../../packages/features/src/**/*.{tsx,ts}` — three `..` segments incorrectly resolve to `apps/` and Tailwind will not see shared components). **Global CSS in apps:** side-effect `import '~/styles/app.css'` in **`apps/web`** `__root.tsx` and **`apps/desktop`** `main.tsx` — do not wire `app.css?url` into `<link rel="stylesheet">`; in dev Vite serves `/src/.../app.css` as JavaScript (HMR), so the browser ignores it and Tailwind looks “broken”. **`@scan-it/features` declares `sideEffects` for `**/*.css`** so bundlers do not drop shared styles.
+- **Desktop dev server:** `apps/desktop/vite.config.ts` uses `server.host: true` (all interfaces) unless `TAURI_DEV_HOST` is set; optional `VITE_DEV_PUBLIC_HOST` for HMR over a LAN hostname (see README).
+- **Theme:** `next-themes` via `ThemeProvider` in `@scan-it/features`; default **dark**. Follow **`docs/STYLEGUIDE.md`** (paths there point at `packages/features` and `apps/web`).
+
+## QR and scanner libraries
+
+- **Pairing QR (desk):** `react-qr-code` only (used inside `DeskScreen` in features).
+- **Phone camera:** `html5-qrcode`. Lifecycle stays in **`apps/web/src/components/phone-scanner.tsx`**; clean up `stop()` on unmount.
+
+## Testing and checks before merge
+
+From repo root:
+
+```bash
+npm run verify
+```
+
+This runs web + marketing production builds, desktop `tsc`, and ESLint on `apps/web/src`, `packages/*`, and `convex/`. Fix all failures before merging.
+
+For a full desktop binary (local, Windows):
+
+```bash
+npm run build:desktop
+```
+
+Requires Rust toolchain and Windows WebView2 runtime.
+
+## When editing docs
 
 - Product decisions and security tradeoffs → **README.md**.
 - Visual / UX tokens → **`docs/STYLEGUIDE.md`**.
-- Agent workflow and architecture expectations → **this file**.
+- Agent workflow, monorepo boundaries, import rules → **this file**.

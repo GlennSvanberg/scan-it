@@ -1,4 +1,5 @@
 node_modules
+*.tsbuildinfo
 
 !.env
 .env
@@ -16,6 +17,10 @@ node_modules
 /public/build
 /dist/
 /dist-ssr/
+apps/web/dist
+apps/marketing/dist
+apps/desktop/dist
+apps/desktop/src-tauri/target
 
 # Sentry Config File
 .env.sentry-build-plugin

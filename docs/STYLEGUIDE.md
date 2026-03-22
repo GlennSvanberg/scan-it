@@ -4,9 +4,9 @@ This document matches the product direction: **modern, high-contrast, developer-
 
 ## Themes
 
-- **Default:** `dark` (see `ThemeProvider` in `src/components/theme-provider.tsx`).
+- **Default:** `dark` (see `ThemeProvider` in `packages/features/src/components/theme-provider.tsx`, exported as `@scan-it/features`).
 - **Toggle:** Header control (`ThemeToggle`) persists with `storageKey="scan-it-theme"` (`next-themes`).
-- **Implementation:** CSS variables on `:root` and `.dark` in `src/styles/app.css`, mapped into Tailwind via `@theme inline`.
+- **Implementation:** CSS variables on `:root` and `.dark` in `packages/features/src/styles/features.css`, mapped into Tailwind via `@theme inline`. The web app adds scanner-specific utilities in `apps/web/src/styles/app.css`.
 
 Do **not** hardcode hex colors in components unless it is for **QR contrast** (e.g. white background behind the QR matrix).
 
@@ -21,7 +21,7 @@ Do **not** hardcode hex colors in components unless it is for **QR contrast** (e
 | **Border** | Hairline dividers; keep subtle. |
 | **Destructive** | End session, errors. |
 
-Primary is tuned in **OKLCH** in `app.css` so it stays vivid in both themes (slightly brighter green on dark backgrounds).
+Primary is tuned in **OKLCH** in `packages/features/src/styles/features.css` so it stays vivid in both themes (slightly brighter green on dark backgrounds).
 
 ## Typography
 
@@ -46,7 +46,7 @@ Extend with additional shadcn primitives as needed; keep **radius and uppercase*
 ## Scanner UI
 
 - **Pairing QR:** White **padding** behind the code for **reliable scans**; outer container may use **primary-tinted border** (`border-primary/40`) and glow.
-- **Phone camera:** `.scanner-frame` wraps the video region — inset border + **corner brackets** using `::before` / `::after` and `var(--primary)` (see `app.css`).
+- **Phone camera:** `.scanner-target-brackets` on the video region — **corner brackets** using `::before` / `::after` and `var(--primary)` (see `apps/web/src/styles/app.css`).
 - **Fullscreen / mobile:** Keep controls reachable; avoid clutter over the camera preview.
 
 ## Motion & effects

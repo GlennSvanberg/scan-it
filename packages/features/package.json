@@ -1,0 +1,31 @@
+{
+  "name": "@scan-it/features",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": ["**/*.css"],
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles/features.css"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
+    "@scan-it/lib": "file:../lib",
+    "class-variance-authority": "^0.7.1",
+    "convex": "^1.33.1",
+    "lucide-react": "^0.577.0",
+    "next-themes": "^0.4.6",
+    "react-qr-code": "^2.0.18"
+  },
+  "peerDependencies": {
+    "@tanstack/react-router": "^1.167.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tanstack/react-router": "^1.167.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "^4.2.1"
+  }
+}

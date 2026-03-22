@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+/* Four levels up from this folder reaches repo root so Tailwind scans packages/features (three levels stops under apps). */
+@source "../../../../packages/features/src/**/*.{tsx,ts}";
+@source "../**/*.{tsx,ts}";
+
+@import '@scan-it/features/styles.css';

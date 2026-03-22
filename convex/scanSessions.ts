@@ -123,7 +123,7 @@ export const getDeskView = query({
       .query("scans")
       .withIndex("by_session", (q) => q.eq("sessionId", session._id))
       .collect();
-    scans.sort((a, b) => a.createdAt - b.createdAt);
+    scans.sort((a, b) => b.createdAt - a.createdAt);
     return {
       status: session.status,
       devicePaired: session.deviceId !== undefined,

@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+@source "./**/*.{tsx,ts}";
+
+@import '../../../packages/features/src/styles/features.css';
+
+@layer utilities {
+  .shadow-glow-sm {
+    box-shadow:
+      0 0 20px oklch(0.72 0.14 165 / 0.22),
+      0 0 40px oklch(0.72 0.14 165 / 0.08);
+  }
+
+  .text-glow {
+    text-shadow:
+      0 0 24px oklch(0.72 0.14 165 / 0.45),
+      0 0 8px oklch(0.72 0.14 165 / 0.25);
+  }
+}

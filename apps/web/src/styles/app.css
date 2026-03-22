@@ -1,0 +1,73 @@
+@import 'tailwindcss';
+/* Four levels up from this folder reaches repo root so Tailwind scans packages/features (three levels stops under apps). */
+@source "../../../../packages/features/src/**/*.{tsx,ts}";
+@source "../**/*.{tsx,ts}";
+
+@import '@scan-it/features/styles.css';
+
+@layer base {
+  /* Full-bleed camera mount — html5-qrcode + center reticle live outside this. */
+  .scanner-video-host {
+    position: relative;
+  }
+
+  /* L-brackets on the center scan target (pairs with enlarged qrbox). */
+  .scanner-target-brackets {
+    position: relative;
+  }
+
+  .scanner-target-brackets::before,
+  .scanner-target-brackets::after {
+    content: '';
+    position: absolute;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-color: var(--primary);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .scanner-target-brackets::before {
+    top: 0;
+    left: 0;
+    border-top-width: 3px;
+    border-left-width: 3px;
+  }
+
+  .scanner-target-brackets::after {
+    bottom: 0;
+    right: 0;
+    border-bottom-width: 3px;
+    border-right-width: 3px;
+  }
+
+  @keyframes scanner-success-ring {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+    10%,
+    20% {
+      box-shadow:
+        0 0 0 4px oklch(0.72 0.14 165 / 0.75),
+        0 0 28px oklch(0.72 0.14 165 / 0.5);
+    }
+    15% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+    35%,
+    45% {
+      box-shadow:
+        0 0 0 4px oklch(0.72 0.14 165 / 0.75),
+        0 0 28px oklch(0.72 0.14 165 / 0.5);
+    }
+    40%,
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+
+  .scanner-success-flash {
+    animation: scanner-success-ring 0.55s ease-out forwards;
+  }
+}

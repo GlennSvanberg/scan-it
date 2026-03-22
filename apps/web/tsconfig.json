@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./src/*"],
+      "@scan-it/convex-api": ["../../convex/_generated/api"],
+      "@scan-it/lib": ["../../packages/lib/src/index.ts"],
+      "@scan-it/features": ["../../packages/features/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

@@ -5,5 +5,11 @@ import convexPlugin from '@convex-dev/eslint-plugin'
 export default defineConfig([
   ...tanstackConfig,
   ...convexPlugin.configs.recommended,
-  globalIgnores(['convex/_generated']),
+  globalIgnores([
+    '**/convex/_generated/**',
+    '**/routeTree.gen.ts',
+    '**/dist/**',
+    '**/.output/**',
+    'apps/desktop/src-tauri/target/**',
+  ]),
 ])
