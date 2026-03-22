@@ -1,5 +1,6 @@
 import basicSsl from '@vitejs/plugin-basic-ssl'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import { nitro } from 'nitro/vite'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
@@ -80,6 +81,7 @@ export default defineConfig(({ mode }) => {
           ]
         : []),
       tanstackStart(),
+      nitro(),
       viteReact(),
     ],
   }
