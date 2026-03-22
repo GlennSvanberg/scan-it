@@ -232,7 +232,10 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
   const [facingMode, setFacingMode] = React.useState<'environment' | 'user'>(
     'environment',
   )
-  const [torchSupported, setTorchSupported] = React.useState(false)
+  /** True when the browser reports torch support; false when it reports no torch. */
+  const [torchCapability, setTorchCapability] = React.useState<
+    boolean | 'unknown'
+  >('unknown')
   const [torchOn, setTorchOn] = React.useState(false)
   const [queuedCount, setQueuedCount] = React.useState(0)
   const [lastFailedSubmit, setLastFailedSubmit] =
@@ -407,7 +410,7 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
 
   const stopCamera = React.useCallback(async () => {
     scanningActiveRef.current = false
-    setTorchSupported(false)
+    setTorchCapability('unknown')
     setTorchOn(false)
     await releaseWakeLock()
     const h = html5Ref.current
@@ -436,7 +439,7 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
       setCameraPhase('starting')
       setCameraError(null)
       setTorchOn(false)
-      setTorchSupported(false)
+      setTorchCapability('unknown')
 
       let html5 = html5Ref.current
       if (html5 === null) {
@@ -522,9 +525,15 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
         const caps = html5.getRunningTrackCapabilities() as MediaTrackCapabilities & {
           torch?: boolean
         }
-        setTorchSupported(caps.torch === true)
+        if (caps.torch === true) {
+          setTorchCapability(true)
+        } else if (caps.torch === false) {
+          setTorchCapability(false)
+        } else {
+          setTorchCapability('unknown')
+        }
       } catch {
-        setTorchSupported(false)
+        setTorchCapability('unknown')
       }
 
       void requestWakeLock()
@@ -657,10 +666,13 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
         } as MediaTrackConstraints)
         setTorchOn(next)
       } catch {
-        // ignore
+        // Unsupported or busy — leave torch off; user can retry
       }
     })()
   }
+
+  const showFlashlightToggle =
+    facingMode === 'environment' && torchCapability !== false
 
   const onRetrySend = () => {
     if (lastFailedSubmit === null) return
@@ -754,13 +766,18 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
                   ? 'Use front camera'
                   : 'Use back camera'}
               </Button>
-              {torchSupported ? (
+              {showFlashlightToggle ? (
                 <Button
                   type="button"
                   variant={torchOn ? 'default' : 'outline'}
                   onClick={onToggleTorch}
+                  title={
+                    torchCapability === 'unknown'
+                      ? 'Turn the phone flashlight on or off (if supported)'
+                      : undefined
+                  }
                 >
-                  {torchOn ? 'Light on' : 'Light'}
+                  {torchOn ? 'Flashlight on' : 'Flashlight'}
                 </Button>
               ) : null}
             </>
