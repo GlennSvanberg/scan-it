@@ -29,6 +29,8 @@ function DeskPage() {
   const [deskToken, setDeskToken] = React.useState<string | null>(null)
   const endSession = useMutation(api.scanSessions.endSession)
   const [ending, setEnding] = React.useState(false)
+  const [scanToClipboard, setScanToClipboard] = React.useState(false)
+  const [clipboardHint, setClipboardHint] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     setDeskToken(readDeskToken(publicId))
@@ -47,7 +49,7 @@ function DeskPage() {
   const lastId = React.useRef<string | null>(null)
 
   React.useEffect(() => {
-    if (data === undefined || data === null) return
+    if (data === undefined || data === null || !scanToClipboard) return
     const scans = data.scans
     if (scans.length === 0) {
       clipboardPrimed.current = true
@@ -63,7 +65,25 @@ function DeskPage() {
       lastId.current = latest._id
       void navigator.clipboard.writeText(latest.value).catch(() => {})
     }
-  }, [data])
+  }, [data, scanToClipboard])
+
+  const onScanToClipboardChange = (checked: boolean) => {
+    setScanToClipboard(checked)
+    setClipboardHint(null)
+    if (!checked) return
+    if (data === undefined || data === null) return
+    const scans = data.scans
+    if (scans.length > 0) {
+      const latest = scans[scans.length - 1]
+      lastId.current = latest._id
+      clipboardPrimed.current = true
+    }
+    void navigator.clipboard.writeText('\u200b').catch(() => {
+      setClipboardHint(
+        'If auto-copy fails, use Copy latest or wait for the next scan.',
+      )
+    })
+  }
 
   const onCopyLatest = () => {
     if (data === undefined || data === null) return
@@ -142,12 +162,13 @@ function DeskPage() {
   }
 
   const ended = data.status === 'ended'
+  const paired = data.devicePaired
 
-  return (
-    <div className="flex min-h-dvh flex-col">
-      <SiteHeader />
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-8 md:flex-row md:px-8">
-        <section className="flex flex-1 flex-col gap-6">
+  if (!paired) {
+    return (
+      <div className="flex min-h-dvh flex-col">
+        <SiteHeader />
+        <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-stretch gap-8 px-4 py-8 md:px-8">
           <div>
             <h1 className="text-2xl font-bold uppercase tracking-tight md:text-3xl">
               Desk
@@ -171,14 +192,13 @@ function DeskPage() {
                 {pairUrl}
               </p>
               <p className="text-center text-sm text-muted-foreground">
-                {data.devicePaired
-                  ? 'Phone paired. Scan with the camera on your phone.'
-                  : 'Scan the QR with your phone to pair. Only the first phone can join.'}
+                Scan the QR with your phone to pair. Only the first phone can
+                join.
               </p>
             </CardContent>
           </Card>
 
-          <div className="flex flex-wrap gap-3">
+          <div>
             <Button
               type="button"
               variant="destructive"
@@ -187,18 +207,70 @@ function DeskPage() {
             >
               {ending ? 'Ending…' : 'End session'}
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={!data.scans.length}
-              onClick={onCopyLatest}
-            >
-              Copy latest
-            </Button>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <SiteHeader />
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-8 md:px-8">
+        <section className="flex flex-col gap-6">
+          <div>
+            <h1 className="text-2xl font-bold uppercase tracking-tight md:text-3xl">
+              Desk
+            </h1>
+            <p className="mt-1 font-mono text-xs text-muted-foreground">
+              session / {publicId.slice(0, 8)}…
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <label className="flex max-w-md cursor-pointer items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                checked={scanToClipboard}
+                disabled={ended}
+                onChange={(e) => onScanToClipboardChange(e.target.checked)}
+                className="mt-0.5 size-4 shrink-0 rounded border-border accent-primary"
+              />
+              <span className="text-foreground">
+                <span className="font-medium">Scan to clipboard</span>
+                <span className="mt-0.5 block text-muted-foreground">
+                  When on, each new scan copies to the clipboard. Your browser
+                  may ask for permission when you enable this.
+                </span>
+                {clipboardHint ? (
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {clipboardHint}
+                  </span>
+                ) : null}
+              </span>
+            </label>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={ending || ended}
+                onClick={() => void onEnd()}
+              >
+                {ending ? 'Ending…' : 'End session'}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!data.scans.length}
+                onClick={onCopyLatest}
+              >
+                Copy latest
+              </Button>
+            </div>
           </div>
         </section>
 
-        <section className="flex flex-[1.2] flex-col gap-4">
+        <section className="flex w-full flex-col gap-4">
           <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
             Log
           </h2>

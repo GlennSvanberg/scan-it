@@ -107,4 +107,34 @@
     border-bottom-width: 3px;
     border-right-width: 3px;
   }
+
+  @keyframes scanner-success-ring {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+    10%,
+    20% {
+      box-shadow:
+        0 0 0 4px oklch(0.72 0.14 165 / 0.75),
+        0 0 28px oklch(0.72 0.14 165 / 0.5);
+    }
+    15% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+    35%,
+    45% {
+      box-shadow:
+        0 0 0 4px oklch(0.72 0.14 165 / 0.75),
+        0 0 28px oklch(0.72 0.14 165 / 0.5);
+    }
+    40%,
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+
+  .scanner-success-flash {
+    animation: scanner-success-ring 0.55s ease-out forwards;
+  }
 }
