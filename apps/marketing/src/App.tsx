@@ -1,5 +1,5 @@
 const DEFAULT_DOWNLOAD =
-  'https://github.com/OWNER/REPO/releases/latest/download/scan-it-windows-portable.zip'
+  'https://github.com/GlennSvanberg/scan-it/releases/latest/download/scan-it-windows-portable.zip'
 
 export default function App() {
   const downloadUrl =

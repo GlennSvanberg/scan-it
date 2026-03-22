@@ -180,23 +180,130 @@ function cameraIdArg(facing: 'environment' | 'user'): { facingMode: 'environment
 function advancedVideoConstraints(
   facing: 'environment' | 'user',
   tier: 'high' | 'mid',
+  opts?: { exactDeviceId?: string | null },
 ): MediaTrackConstraints {
   const facingMode =
     facing === 'environment'
       ? { ideal: 'environment' as const }
       : { ideal: 'user' as const }
+  const id = opts?.exactDeviceId
+  const deviceId =
+    typeof id === 'string' && id.length > 0 ? { exact: id } : undefined
+
   if (tier === 'high') {
     return {
+      ...(deviceId !== undefined ? { deviceId } : {}),
       facingMode,
       width: { ideal: 1920 },
       height: { ideal: 1080 },
     }
   }
   return {
+    ...(deviceId !== undefined ? { deviceId } : {}),
     facingMode,
     width: { ideal: 1280 },
     height: { ideal: 720 },
   }
+}
+
+function isLikelyFrontCameraLabel(label: string): boolean {
+  return /front|user|selfie|face\s*time|facetime|iris|true\s*depth|depth|dot\s*projection/i.test(
+    label.toLowerCase(),
+  )
+}
+
+function isLikelyBackCameraLabel(label: string): boolean {
+  return /back|rear|environment|wide|ultra|tele|macro|lid(l|a)r|0x/i.test(
+    label.toLowerCase(),
+  )
+}
+
+/**
+ * Many phones expose several lenses as separate videoinputs. `facingMode:
+ * environment` often picks a wide/auxiliary camera with no LED torch.
+ * We probe for a device that reports `torch` in track capabilities, then fall
+ * back to the last non–front-facing device (common “main” back camera).
+ */
+async function resolveEnvironmentCameraDeviceId(): Promise<string | null> {
+  if (typeof navigator === 'undefined') {
+    return null
+  }
+  // Insecure contexts / older WebViews omit `mediaDevices` despite lib.dom types.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard
+  if (navigator.mediaDevices === undefined) {
+    return null
+  }
+  const md = navigator.mediaDevices
+
+  let warm: MediaStream | null = null
+  try {
+    warm = await md.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } },
+      audio: false,
+    })
+  } catch {
+    return null
+  } finally {
+    if (warm !== null) {
+      warm.getTracks().forEach((t) => t.stop())
+    }
+  }
+
+  const raw = await md.enumerateDevices()
+  const inputs = raw.filter(
+    (d): d is MediaDeviceInfo & { deviceId: string } =>
+      d.kind === 'videoinput' && Boolean(d.deviceId),
+  )
+  if (inputs.length === 0) {
+    return null
+  }
+
+  const ranked = [...inputs].sort((a, b) => {
+    const fa = isLikelyFrontCameraLabel(a.label) ? 0 : 1
+    const fb = isLikelyFrontCameraLabel(b.label) ? 0 : 1
+    if (fa !== fb) {
+      return fb - fa
+    }
+    const ba = isLikelyBackCameraLabel(a.label) ? 1 : 0
+    const bb = isLikelyBackCameraLabel(b.label) ? 1 : 0
+    if (ba !== bb) {
+      return bb - ba
+    }
+    return 0
+  })
+
+  for (const d of ranked) {
+    if (isLikelyFrontCameraLabel(d.label)) {
+      continue
+    }
+
+    let stream: MediaStream | null = null
+    try {
+      stream = await md.getUserMedia({
+        video: { deviceId: { exact: d.deviceId } },
+        audio: false,
+      })
+      const track = stream.getVideoTracks()[0]
+      const caps = track.getCapabilities() as MediaTrackCapabilities & {
+        torch?: boolean
+      }
+      if (caps.torch === true) {
+        return d.deviceId
+      }
+    } catch {
+      // Device in use or gone — try next.
+    } finally {
+      if (stream !== null) {
+        stream.getTracks().forEach((t) => t.stop())
+      }
+    }
+  }
+
+  const nonFront = inputs.filter((d) => !isLikelyFrontCameraLabel(d.label))
+  if (nonFront.length > 0) {
+    return nonFront[nonFront.length - 1].deviceId
+  }
+  return inputs[inputs.length - 1].deviceId
 }
 
 type VideoSettingsWithTorch = MediaTrackSettings & { torch?: boolean }
@@ -225,6 +332,11 @@ async function applyTorchOnVideoTrack(
         { torch: on, focusMode: 'continuous' } as MediaTrackConstraintSet,
       ],
     },
+    {
+      advanced: [
+        { torch: on, exposureMode: 'continuous' } as MediaTrackConstraintSet,
+      ],
+    },
   ]
   let last: unknown
   for (const c of attempts) {
@@ -238,9 +350,32 @@ async function applyTorchOnVideoTrack(
   throw last
 }
 
+function torchApplyLooksApplied(
+  on: boolean,
+  settings: VideoSettingsWithTorch,
+  caps: MediaTrackCapabilities & { torch?: boolean },
+): boolean {
+  if (settings.torch === on) {
+    return true
+  }
+  if (!on && (settings.torch === false || settings.torch === undefined)) {
+    return true
+  }
+  // Many Chromium builds omit `torch` from getSettings() even when it works.
+  if (on && settings.torch === undefined) {
+    // If the browser says this track cannot torch, don't treat "unknown" as success.
+    return caps.torch !== false
+  }
+  return false
+}
+
 /**
  * Drive torch the same way html5-qrcode's built-in torch button does, with
  * fallbacks when getCapabilities() omits `torch` but applyConstraints still works.
+ *
+ * Some browsers resolve applyConstraints without toggling hardware torch, or only
+ * one constraint shape works — try html5-qrcode's capability helper, direct track
+ * updates, then applyVideoConstraints until settings look right.
  */
 async function setScannerTorch(
   scanner: Html5Qrcode,
@@ -250,47 +385,52 @@ async function setScannerTorch(
   try {
     const camCaps = scanner.getRunningTrackCameraCapabilities()
     const torchFeat = camCaps.torchFeature()
-
-    let applied = false
     const track = scannerVideoTrack(regionElementId)
+    const caps = scanner.getRunningTrackCapabilities() as MediaTrackCapabilities & {
+      torch?: boolean
+    }
+
+    type TorchOp = () => Promise<void>
+    const ops: Array<TorchOp> = []
+
+    if (torchFeat.isSupported()) {
+      ops.push(() => torchFeat.apply(on))
+    }
     if (track !== null) {
+      ops.push(() => applyTorchOnVideoTrack(track, on))
+    }
+    ops.push(() =>
+      scanner.applyVideoConstraints({
+        advanced: [{ torch: on } as MediaTrackConstraintSet],
+      } as MediaTrackConstraints),
+    )
+
+    let lastError: unknown
+    for (const op of ops) {
       try {
-        await applyTorchOnVideoTrack(track, on)
-        applied = true
-      } catch {
-        // Fall through to html5-qrcode helpers — constraint shapes vary by browser.
+        await op()
+      } catch (e) {
+        lastError = e
+        continue
       }
-    }
 
-    if (!applied) {
-      if (torchFeat.isSupported()) {
-        await torchFeat.apply(on)
-      } else {
-        await scanner.applyVideoConstraints({
-          advanced: [{ torch: on } as MediaTrackConstraintSet],
-        } as MediaTrackConstraints)
+      const settings = scanner.getRunningTrackSettings() as VideoSettingsWithTorch
+      if (torchApplyLooksApplied(on, settings, caps)) {
+        return { ok: true }
       }
+      lastError = new Error('Torch state did not update after applyConstraints')
     }
 
-    const settings = scanner.getRunningTrackSettings() as VideoSettingsWithTorch
-    if (settings.torch === on) {
-      return { ok: true }
-    }
-    if (on && settings.torch === undefined) {
-      return { ok: true }
-    }
-    if (
-      !on &&
-      (settings.torch === false || settings.torch === undefined)
-    ) {
-      return { ok: true }
-    }
+    const message =
+      lastError instanceof DOMException
+        ? `${lastError.name}: ${lastError.message}`
+        : lastError instanceof Error
+          ? lastError.message
+          : typeof lastError === 'string'
+            ? lastError
+            : 'The flashlight did not respond. Use Chrome on Android if you can — iOS and some browsers only support this in limited cases.'
 
-    return {
-      ok: false,
-      message:
-        'The flashlight did not respond. Use Chrome on Android if you can — iOS and some browsers only support this in limited cases.',
-    }
+    return { ok: false, message }
   } catch (e) {
     const message =
       e instanceof DOMException
@@ -311,6 +451,10 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
 
   const regionId = 'phone-scanner-region'
   const containerRef = React.useRef<HTMLDivElement>(null)
+  /** Picked once per session (reset when camera stops) so we open a back camera that can torch. */
+  const environmentCameraDeviceIdRef = React.useRef<string | null | undefined>(
+    undefined,
+  )
   const html5Ref = React.useRef<Html5Qrcode | null>(null)
   const lastDecodeRef = React.useRef<{
     value: string
@@ -516,6 +660,7 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
 
   const stopCamera = React.useCallback(async () => {
     scanningActiveRef.current = false
+    environmentCameraDeviceIdRef.current = undefined
     setTorchCapability('unknown')
     setTorchOn(false)
     setTorchToggling(false)
@@ -568,6 +713,18 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
         }
       }
 
+      let environmentExactId: string | null = null
+      if (face === 'environment') {
+        if (environmentCameraDeviceIdRef.current === undefined) {
+          environmentCameraDeviceIdRef.current =
+            await resolveEnvironmentCameraDeviceId()
+        }
+        const cached = environmentCameraDeviceIdRef.current
+        environmentExactId =
+          typeof cached === 'string' && cached.length > 0 ? cached : null
+      }
+      const useEnvironmentDeviceId = environmentExactId !== null
+
       const qrbox: Html5QrcodeCameraScanConfig['qrbox'] = (
         viewfinderWidth,
         viewfinderHeight,
@@ -590,11 +747,21 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
           qrbox,
           ...(tier === 'low'
             ? {}
-            : { videoConstraints: advancedVideoConstraints(face, tier) }),
+            : {
+                videoConstraints: advancedVideoConstraints(face, tier, {
+                  exactDeviceId: useEnvironmentDeviceId
+                    ? environmentExactId
+                    : undefined,
+                }),
+              }),
         }
+        const cameraIdOrConfig =
+          tier === 'low' && useEnvironmentDeviceId
+            ? environmentExactId!
+            : cameraIdArg(face)
         try {
           await html5.start(
-            cameraIdArg(face),
+            cameraIdOrConfig,
             scanConfig,
             (decodedText, decodedResult) => {
               const fmt = decodedResult.result.format?.formatName

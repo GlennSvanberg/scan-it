@@ -17,7 +17,7 @@ import { Button } from '../components/ui/button.tsx'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.tsx'
 
 const DEFAULT_DESKTOP_DOWNLOAD =
-  'https://github.com/OWNER/REPO/releases/latest/download/scan-it-windows-portable.zip'
+  'https://github.com/GlennSvanberg/scan-it/releases/latest/download/scan-it-windows-portable.zip'
 
 export type InjectSuffix = 'none' | 'enter' | 'tab'
 
