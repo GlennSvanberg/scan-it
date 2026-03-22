@@ -389,8 +389,8 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
         <SiteHeader onBrandClick={leaveToHome} />
         <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-stretch gap-8 px-4 py-8 md:px-8">
           <p className="text-sm text-muted-foreground">
-            Waiting for your phone to connect. Closing this window ends the
-            session.
+            Waiting for your phone to connect. Closing this window disconnects
+            your phone.
           </p>
 
           <PairingQrCard pairUrl={pairUrl} />
@@ -416,7 +416,7 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-8 md:px-8">
         <p className="max-w-3xl text-sm text-muted-foreground">
           Your phone is connected. Scans appear in the log. Closing this window
-          ends the session. Use{' '}
+          disconnects your phone. Use{' '}
           <span className="text-foreground">Phone link &amp; QR</span> below if
           you need to open the scanner on this phone again.
         </p>
@@ -436,55 +436,6 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
                 <PairingQrBody pairUrl={pairUrl} />
               </div>
             </details>
-
-            {!inject && !ended ? (
-              <Card className="border-primary/20 bg-card/60 shadow-glow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Desktop app (Windows &amp; Mac)</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm text-muted-foreground">
-                  <p>
-                    In the browser you can view scans here and copy them to the
-                    clipboard. The{' '}
-                    <span className="font-medium text-foreground">desktop app</span>{' '}
-                    can also type each new scan into{' '}
-                    <span className="text-foreground">whatever program is focused</span>
-                    —for example Excel or other line-of-business tools. On macOS you
-                    may need to grant Accessibility permission for keystrokes.
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    <Button asChild variant="outline" className="uppercase tracking-wide">
-                      <a
-                        href={desktopPrimaryHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {desktopPrimaryLabel}
-                      </a>
-                    </Button>
-                    <details className="rounded-md border border-border/60 bg-background/40 px-3 py-2">
-                      <summary className="cursor-pointer text-xs font-medium text-foreground">
-                        All downloads
-                      </summary>
-                      <ul className="mt-2 space-y-1.5 list-none pl-0 text-xs">
-                        {desktopAllRows.map((row) => (
-                          <li key={row.href}>
-                            <a
-                              href={row.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary underline-offset-2 hover:underline"
-                            >
-                              {row.label}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : null}
 
             <div className="flex flex-col gap-3">
               <label className="flex cursor-pointer items-start gap-3 text-sm">
@@ -645,6 +596,55 @@ export function DeskScreen({ publicId, inject }: DeskScreenProps) {
               </CardContent>
             </Card>
           </section>
+
+          {!inject && !ended ? (
+            <Card className="border-primary/20 bg-card/60 shadow-glow-sm lg:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Desktop app (Windows &amp; Mac)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  In the browser you can view scans here and copy them to the
+                  clipboard. The{' '}
+                  <span className="font-medium text-foreground">desktop app</span>{' '}
+                  can also type each new scan into{' '}
+                  <span className="text-foreground">whatever program is focused</span>
+                  —for example Excel or other line-of-business tools. On macOS you
+                  may need to grant Accessibility permission for keystrokes.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Button asChild variant="outline" className="uppercase tracking-wide">
+                    <a
+                      href={desktopPrimaryHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {desktopPrimaryLabel}
+                    </a>
+                  </Button>
+                  <details className="rounded-md border border-border/60 bg-background/40 px-3 py-2">
+                    <summary className="cursor-pointer text-xs font-medium text-foreground">
+                      All downloads
+                    </summary>
+                    <ul className="mt-2 space-y-1.5 list-none pl-0 text-xs">
+                      {desktopAllRows.map((row) => (
+                        <li key={row.href}>
+                          <a
+                            href={row.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline-offset-2 hover:underline"
+                          >
+                            {row.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       </main>
     </div>
