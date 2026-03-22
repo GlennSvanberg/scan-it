@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Scan It">
+  <!-- Brand colors match packages/features dark theme background and primary (oklch hue 165). -->
+  <rect width="512" height="512" fill="#09090b" />
+  <g fill="#6fd4be">
+    <rect x="108" y="120" width="14" height="272" />
+    <rect x="128" y="120" width="8" height="272" />
+    <rect x="142" y="120" width="8" height="272" />
+    <rect x="158" y="120" width="20" height="272" />
+    <rect x="186" y="120" width="8" height="272" />
+    <rect x="200" y="120" width="14" height="272" />
+    <rect x="222" y="120" width="8" height="272" />
+    <rect x="236" y="120" width="14" height="272" />
+    <rect x="258" y="120" width="8" height="272" />
+    <rect x="274" y="120" width="22" height="272" />
+    <rect x="304" y="120" width="8" height="272" />
+    <rect x="318" y="120" width="14" height="272" />
+    <rect x="340" y="120" width="8" height="272" />
+    <rect x="354" y="120" width="14" height="272" />
+    <rect x="376" y="120" width="8" height="272" />
+    <rect x="390" y="120" width="14" height="272" />
+  </g>
+</svg>
