@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @source "./**/*.{tsx,ts}";
+@source "../../packages/features/src/**/*.{tsx,ts}";
 
 @import '../../../packages/features/src/styles/features.css';
 

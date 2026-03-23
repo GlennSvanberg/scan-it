@@ -1,4 +1,6 @@
 export { SiteHeader, type SiteHeaderProps } from './components/site-header.tsx'
+export { SiteFooter, type SiteFooterProps } from './components/site-footer.tsx'
+export { TermsOfServiceContent } from './legal/terms-of-service-content.tsx'
 export { ThemeProvider } from './components/theme-provider.tsx'
 export { ThemeToggle } from './components/theme-toggle.tsx'
 export { Button, buttonVariants } from './components/ui/button.tsx'

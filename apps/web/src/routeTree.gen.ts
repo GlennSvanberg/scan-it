@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SPublicIdRouteImport } from './routes/s.$publicId'
 import { Route as DeskPublicIdRouteImport } from './routes/desk.$publicId'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StartRoute = StartRouteImport.update({
   id: '/start',
   path: '/start',
@@ -38,12 +44,14 @@ const DeskPublicIdRoute = DeskPublicIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/start': typeof StartRoute
+  '/terms': typeof TermsRoute
   '/desk/$publicId': typeof DeskPublicIdRoute
   '/s/$publicId': typeof SPublicIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/start': typeof StartRoute
+  '/terms': typeof TermsRoute
   '/desk/$publicId': typeof DeskPublicIdRoute
   '/s/$publicId': typeof SPublicIdRoute
 }
@@ -51,26 +59,41 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/start': typeof StartRoute
+  '/terms': typeof TermsRoute
   '/desk/$publicId': typeof DeskPublicIdRoute
   '/s/$publicId': typeof SPublicIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/start' | '/desk/$publicId' | '/s/$publicId'
+  fullPaths: '/' | '/start' | '/terms' | '/desk/$publicId' | '/s/$publicId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/start' | '/desk/$publicId' | '/s/$publicId'
-  id: '__root__' | '/' | '/start' | '/desk/$publicId' | '/s/$publicId'
+  to: '/' | '/start' | '/terms' | '/desk/$publicId' | '/s/$publicId'
+  id:
+    | '__root__'
+    | '/'
+    | '/start'
+    | '/terms'
+    | '/desk/$publicId'
+    | '/s/$publicId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   StartRoute: typeof StartRoute
+  TermsRoute: typeof TermsRoute
   DeskPublicIdRoute: typeof DeskPublicIdRoute
   SPublicIdRoute: typeof SPublicIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/start': {
       id: '/start'
       path: '/start'
@@ -105,6 +128,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   StartRoute: StartRoute,
+  TermsRoute: TermsRoute,
   DeskPublicIdRoute: DeskPublicIdRoute,
   SPublicIdRoute: SPublicIdRoute,
 }

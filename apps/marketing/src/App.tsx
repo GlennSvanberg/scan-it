@@ -1,3 +1,4 @@
+import { SiteFooter } from '@scan-it/features/site-footer'
 import {
   allDesktopDownloadRows,
   detectClientDesktopKind,
@@ -117,9 +118,16 @@ export default function App() {
         </section>
       </main>
 
-      <footer className="border-t border-border px-6 py-8 text-center text-xs text-muted-foreground md:px-12">
-        Scan It — phone to desktop scanning
-      </footer>
+      <SiteFooter
+        termsLink={
+          <a
+            href="/terms"
+            className="font-medium text-foreground underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+          >
+            Terms of Service
+          </a>
+        }
+      />
     </div>
   )
 }

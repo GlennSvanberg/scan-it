@@ -12,9 +12,14 @@ const brandStaticClassName =
 export type SiteHeaderProps = {
   /** When set, shows a Back control that ends the desk flow (caller handles navigation + disconnect). */
   onBrandClick?: () => void | Promise<void>
+  /**
+   * When set, home uses a plain anchor instead of the router (e.g. marketing app without
+   * TanStack Router). Ignored when `onBrandClick` is set.
+   */
+  homeHref?: string
 }
 
-export function SiteHeader({ onBrandClick }: SiteHeaderProps) {
+export function SiteHeader({ onBrandClick, homeHref }: SiteHeaderProps) {
   return (
     <header className="flex items-center justify-between border-b border-border px-4 py-3 md:px-8">
       {onBrandClick ? (
@@ -31,6 +36,10 @@ export function SiteHeader({ onBrandClick }: SiteHeaderProps) {
           </Button>
           <span className={brandStaticClassName}>Scan It</span>
         </div>
+      ) : homeHref !== undefined ? (
+        <a href={homeHref} className={brandClassName}>
+          Scan It
+        </a>
       ) : (
         <Link to="/" className={brandClassName}>
           Scan It

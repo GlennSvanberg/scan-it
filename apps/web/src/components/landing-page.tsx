@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight, CheckCircle2, Download, Laptop, Smartphone, Zap } from 'lucide-react'
 import {
   Button,
+  SiteFooter,
   SiteHeader,
 } from '@scan-it/features'
 import {
@@ -368,16 +369,16 @@ export function LandingPage() {
         </section>
       </main>
       
-      <footer className="border-t border-border/50 py-8 bg-muted/20">
-        <div className="container mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Scan It. All rights reserved.</p>
-          <div className="flex gap-6">
-            <a href="https://github.com/GlennSvanberg/scan-it" target="_blank" rel="noreferrer" className="hover:text-foreground transition-colors font-medium">
-              GitHub
-            </a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter
+        termsLink={
+          <Link
+            to="/terms"
+            className="font-medium text-foreground underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+          >
+            Terms of Service
+          </Link>
+        }
+      />
     </div>
   )
 }

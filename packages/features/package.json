@@ -6,7 +6,11 @@
   "sideEffects": ["**/*.css"],
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles/features.css"
+    "./styles.css": "./src/styles/features.css",
+    "./site-footer": "./src/components/site-footer.tsx",
+    "./terms-of-service-content": "./src/legal/terms-of-service-content.tsx",
+    "./theme-provider": "./src/components/theme-provider.tsx",
+    "./site-header": "./src/components/site-header.tsx"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
