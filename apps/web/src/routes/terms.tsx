@@ -1,8 +1,17 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { SiteHeader, TermsOfServiceContent } from '@scan-it/features'
+import { Link, createFileRoute } from '@tanstack/react-router'
+import { SiteFooter, SiteHeader, TermsOfServiceContent } from '@scan-it/features'
+import { pageMeta } from '~/lib/seo-head'
 
 export const Route = createFileRoute('/terms')({
   ssr: false,
+  head: () => ({
+    meta: pageMeta({
+      title: 'Terms of Service | Scan It',
+      description:
+        'Terms of Service for Scan It: pairing, scan data, acceptable use, and limitations of liability.',
+      path: '/terms',
+    }) as never,
+  }),
   component: TermsOfServicePage,
 })
 
@@ -37,6 +46,33 @@ function TermsOfServicePage() {
           </div>
         </article>
       </main>
+
+      <SiteFooter
+        termsLink={
+          <Link
+            to="/terms"
+            className="font-medium text-foreground underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+          >
+            Terms of Service
+          </Link>
+        }
+        privacyLink={
+          <Link
+            to="/privacy"
+            className="font-medium text-foreground underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+          >
+            Privacy
+          </Link>
+        }
+        aboutLink={
+          <Link
+            to="/about"
+            className="font-medium text-foreground underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+          >
+            About
+          </Link>
+        }
+      />
     </div>
   )
 }

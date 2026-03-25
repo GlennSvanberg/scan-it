@@ -27,7 +27,7 @@ Do **not** add user auth for this product phase unless the human explicitly asks
 | Phone scanner, `/s/*` route, scanner-only CSS | `apps/web` only |
 | Start routes, SSR/router wiring, web-only assets | `apps/web` |
 | Tauri shell, Rust commands (`inject_text`), window config | `apps/desktop` |
-| Landing / download page | `apps/marketing` |
+| Landing, SEO guides, legal pages | `apps/web` (`/`, `/privacy`, `/about`, `/wireless-barcode-scanner`, …) |
 
 **Rule of thumb:** If both the browser desk and the Tauri desk need the same screen or styling, put it in **`packages/features`** (or **`packages/lib`** for pure functions). If only the phone or only the web server needs it, keep it in **`apps/web`**.
 
@@ -59,7 +59,7 @@ Do **not** add user auth for this product phase unless the human explicitly asks
 ### Environment variables
 
 - **Convex CLI:** expects `.env.local` at **repo root** when running `npx convex dev` from root.
-- **Vite:** all three apps set **`envDir`** to the **repo root**, so one root `.env.local` supplies `VITE_*` for web, desktop, and marketing dev servers. Document new `VITE_*` names in README and the relevant `apps/*/.env.example`.
+- **Vite:** `apps/web` and `apps/desktop` set **`envDir`** to the **repo root**, so one root `.env.local` supplies `VITE_*` for both. Document new `VITE_*` names in README and the relevant `apps/*/.env.example`.
 
 ## Frontend conventions
 
@@ -90,7 +90,7 @@ From repo root:
 npm run verify
 ```
 
-This runs web + marketing production builds, desktop `tsc`, and ESLint on `apps/web/src`, `packages/*`, and `convex/`. Fix all failures before merging.
+This runs a web production build, desktop `tsc`, and ESLint on `apps/web/src`, `packages/*`, and `convex/`. Fix all failures before merging.
 
 For a full desktop binary (local, Windows or macOS):
 

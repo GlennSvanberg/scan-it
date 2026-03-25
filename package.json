@@ -14,11 +14,10 @@
     "dev:ts": "tsc -b -w",
     "build": "npm run build -w @scan-it/web",
     "build:web": "npm run build -w @scan-it/web",
-    "build:marketing": "npm run build -w @scan-it/marketing",
     "build:desktop": "npm run tauri:build -w @scan-it/desktop",
     "start": "npm run start -w @scan-it/web",
     "verify": "npm run lint",
-    "lint": "npm run build -w @scan-it/web && npm run build -w @scan-it/marketing && npm run lint -w @scan-it/desktop && npm exec eslint -- apps/web/src packages/lib/src packages/features/src convex",
+    "lint": "npm run build -w @scan-it/web && npm run lint -w @scan-it/desktop && npm exec eslint -- apps/web/src packages/lib/src packages/features/src convex",
     "format": "prettier --write ."
   },
   "devDependencies": {

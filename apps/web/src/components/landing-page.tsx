@@ -341,7 +341,53 @@ export function LandingPage() {
             </div>
           </div>
         </section>
-        
+
+        {/* SEO / guides */}
+        <section className="py-16 border-t border-border/50">
+          <div className="container mx-auto px-4 md:px-6">
+            <h2 className="text-center text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Guides
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground">
+              Short pages for common searches and workflows.
+            </p>
+            <ul className="mx-auto mt-8 grid max-w-3xl gap-3 text-sm sm:grid-cols-2">
+              <li>
+                <Link
+                  to="/wireless-barcode-scanner"
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  Wireless barcode scanner for PC
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/barcode-scanner-for-excel"
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  Barcode scanner for Excel
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/inventory-barcode-scanner"
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  Inventory barcode scanner
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/compare/phone-barcode-scanner-vs-barcode-to-pc"
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  Compare with other phone-to-PC tools
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </section>
+
         {/* CTA Section */}
         <section className="py-24 relative overflow-hidden border-t border-border/50">
           <div className="absolute inset-0 bg-primary/5" />
@@ -376,6 +422,22 @@ export function LandingPage() {
             className="font-medium text-foreground underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
           >
             Terms of Service
+          </Link>
+        }
+        privacyLink={
+          <Link
+            to="/privacy"
+            className="font-medium text-foreground underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+          >
+            Privacy
+          </Link>
+        }
+        aboutLink={
+          <Link
+            to="/about"
+            className="font-medium text-foreground underline decoration-primary/40 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
+          >
+            About
           </Link>
         }
       />

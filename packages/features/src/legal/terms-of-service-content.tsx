@@ -4,7 +4,7 @@ const h2Class =
 const pClass = 'text-[15px] leading-relaxed text-muted-foreground'
 const ulClass = 'list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-muted-foreground'
 
-/** Full Terms of Service body (used on /terms and marketing). */
+/** Full Terms of Service body (used on /terms). */
 export function TermsOfServiceContent() {
   return (
     <div className="space-y-10">

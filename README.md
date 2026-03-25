@@ -8,8 +8,7 @@ Phone-as-a-scanner for your desktop: open Scan It on a computer, scan a pairing 
 
 | Path | Purpose |
 |------|---------|
-| [`apps/web`](./apps/web) | TanStack Start app: `/` (landing), `/start`, `/desk/$publicId`, `/s/$publicId` (phone). Deploy on Vercel. |
-| [`apps/marketing`](./apps/marketing) | Static landing + download CTA. Deploy on Vercel (second project). |
+| [`apps/web`](./apps/web) | TanStack Start app: `/` (landing), SEO guide pages, `/privacy`, `/about`, `/terms`, `/start`, `/desk/$publicId`, `/s/$publicId` (phone). Single deploy on Vercel. |
 | [`apps/desktop`](./apps/desktop) | Tauri shell: same desk/home flows + **type into focused app** (Windows & macOS); optional **scan enrichment** on the desk (books via [Open Library](https://openlibrary.org/), food/beauty via [Open Food Facts](https://world.openfoodfacts.org/) / [Open Beauty Facts](https://world.openbeautyfacts.org/)). |
 | [`packages/lib`](./packages/lib) | Shared helpers (`deskToken`, `deviceId`, `cn`, pairing, beacon) plus desk enrichment: ISBN → [`open-library.ts`](./packages/lib/src/open-library.ts), GTIN → [`open-facts-product.ts`](./packages/lib/src/open-facts-product.ts). |
 | [`packages/features`](./packages/features) | Shared Home + Desk UI used by web and desktop. |
@@ -23,13 +22,12 @@ Phone-as-a-scanner for your desktop: open Scan It on a computer, scan a pairing 
 | Session/device helpers, `cn()`, pairing URL helper | `packages/lib` | `packages/features`, `apps/web` (phone route), `apps/desktop` |
 | Convex API types / `api` object | `convex/_generated/api` | Via Vite alias `@scan-it/convex-api` in apps; TS path in `packages/features` |
 | Phone scanner, portrait gate, scanner CSS utilities | `apps/web` only | Web app (not shipped in desktop) |
-| Marketing styles | Imports `packages/features` CSS for the same look | `apps/marketing` |
 
 ## Environment variables
 
 **Convex CLI** reads `.env.local` at the **repository root** (where you run `npx convex dev`). Keep `CONVEX_DEPLOYMENT` and any Convex-managed keys there.
 
-**Vite** (`apps/web`, `apps/desktop`, `apps/marketing`) is configured with **`envDir` = monorepo root**, so a single **root `.env.local`** next to the root `package.json` is enough for all `VITE_*` variables in local development. You do not have to duplicate files under each `apps/*` folder unless you prefer to.
+**Vite** (`apps/web`, `apps/desktop`) is configured with **`envDir` = monorepo root**, so a single **root `.env.local`** next to the root `package.json` is enough for all `VITE_*` variables in local development. You do not have to duplicate files under each `apps/*` folder unless you prefer to.
 
 | Variable | Required by | Purpose |
 |----------|-------------|---------|
@@ -39,13 +37,12 @@ Phone-as-a-scanner for your desktop: open Scan It on a computer, scan a pairing 
 | `VITE_DEV_HTTPS` | Web (optional) | Set to `1` or `true` to prefer HTTPS in Vite dev. |
 | `VITE_DEV_SSL_DOMAINS` | Web (optional) | Extra hostnames for the dev TLS certificate (comma-separated). |
 | `VITE_DEV_PUBLIC_HOST` | Web, desktop (optional) | Hostname you open in the browser for dev (e.g. `fiwe-gsg3` or a LAN IP). Sets Vite HMR to use that host so hot reload works when you are not on `localhost`. |
-| `VITE_DESKTOP_WINDOWS_INSTALLER_URL` | Marketing, **web** landing, desk | Optional override for Windows NSIS installer URL. |
-| `VITE_DESKTOP_WINDOWS_PORTABLE_URL` | Marketing, **web** landing, desk | Optional override for Windows portable ZIP URL. |
-| `VITE_DESKTOP_MAC_DMG_URL` | Marketing, **web** landing, desk | Optional override for macOS DMG URL. |
-| `VITE_DESKTOP_DOWNLOAD_URL` | Marketing, **web** landing, desk | Legacy: sets **primary** download button only; “All downloads” still use the three URLs above or GitHub `latest` defaults. |
-| `VITE_WEB_APP_URL` | Marketing | Public URL of the web app for the “Open web app” button. |
+| `VITE_DESKTOP_WINDOWS_INSTALLER_URL` | **Web** landing, desk | Optional override for Windows NSIS installer URL. |
+| `VITE_DESKTOP_WINDOWS_PORTABLE_URL` | **Web** landing, desk | Optional override for Windows portable ZIP URL. |
+| `VITE_DESKTOP_MAC_DMG_URL` | **Web** landing, desk | Optional override for macOS DMG URL. |
+| `VITE_DESKTOP_DOWNLOAD_URL` | **Web** landing, desk | Legacy: sets **primary** download button only; “All downloads” still use the three URLs above or GitHub `latest` defaults. |
 
-Templates: [`.env.example`](./.env.example) (root, recommended), plus per-app reminders in [`apps/web/.env.example`](./apps/web/.env.example), [`apps/desktop/.env.example`](./apps/desktop/.env.example), and [`apps/marketing/.env.example`](./apps/marketing/.env.example).
+Templates: [`.env.example`](./.env.example) (root, recommended), plus per-app reminders in [`apps/web/.env.example`](./apps/web/.env.example) and [`apps/desktop/.env.example`](./apps/desktop/.env.example).
 
 ## Product rules
 
@@ -95,7 +92,9 @@ The **Tauri desktop app** can turn each scan into **multiple columns** of metada
 
 ## Routes (web app)
 
-- `/` — Landing: download desktop CTA and **Use in browser** → `/start`.
+- `/` — Landing: download desktop CTA and **Use in browser** → `/start`; SEO “Guides” links to topic pages.
+- `/terms`, `/privacy`, `/about` — Legal and about.
+- `/wireless-barcode-scanner`, `/barcode-scanner-for-excel`, … — SEO guide pages (see `apps/web/src/content/marketing-articles.ts`).
 - `/start` — Creates a desk and redirects to `/desk/$publicId` (same as the desktop app home).
 - `/desk/$publicId` — Desk: pairing QR, log, optional scan-to-clipboard; desk token in **sessionStorage**; closing the tab ends the desk via beacon + header **Scan It** ends explicitly.
 - `/s/$publicId` — Phone: pair (first visit claims slot), then live camera scanner.
@@ -119,14 +118,6 @@ Ensure root **`.env.local`** defines at least `VITE_CONVEX_URL` (and usually `VI
 
 **LAN / hostname dev:** When HTTPS is on (often implied by `VITE_PAIRING_ORIGIN` starting with `https://`), open the **https** URL Vite prints (e.g. `https://fiwe-gsg3:3000`), not `http://`. Add every hostname and LAN IP you use to **`VITE_DEV_SSL_DOMAINS`** so the dev certificate is accepted. If hot reload misbehaves when using a non-localhost host, set **`VITE_DEV_PUBLIC_HOST`** to that same hostname (no `https://`).
 
-### Marketing site locally
-
-```bash
-npm run dev -w @scan-it/marketing
-```
-
-Optional: set `VITE_WEB_APP_URL` and desktop download overrides in root `.env.local` (see env table).
-
 ### Desktop (Tauri) locally
 
 Needs the same `VITE_*` values as web; `VITE_PAIRING_ORIGIN` must point at wherever the **web** app is reachable for QR pairing (often the same as your `npm run dev` web URL).
@@ -149,13 +140,12 @@ From the repository root:
 npm run verify
 ```
 
-This runs production builds for web and marketing, TypeScript check for the desktop UI, and ESLint on shared source. It is the recommended check before pushing.
+This runs a production build for the web app, TypeScript check for the desktop UI, and ESLint on shared source. It is the recommended check before pushing.
 
 Other useful commands:
 
 ```bash
 npm run build -w @scan-it/web
-npm run build -w @scan-it/marketing
 npm run build -w @scan-it/desktop    # Vite bundle only
 npm run build:desktop                 # Full Tauri build → scan-it.exe + NSIS (Windows) or DMG (macOS)
 npm start                             # Run built SSR server (after web build)
@@ -163,10 +153,9 @@ npm start                             # Run built SSR server (after web build)
 
 ## Vercel
 
-Use **two** projects, both with **Root Directory** set in the Vercel UI:
+Use **one** project with **Root Directory** `apps/web`. The included [`apps/web/vercel.json`](./apps/web/vercel.json) installs from the monorepo root and builds `@scan-it/web`. Set **`VITE_CONVEX_URL`**, **`VITE_PAIRING_ORIGIN`** (production URL of this deployment—used for canonical URLs and phone pairing), optional **`VITE_DESKTOP_*`** URL overrides for download links, and any dev/SSL vars if needed.
 
-1. **Web app** — Root Directory `apps/web`. The included [`apps/web/vercel.json`](./apps/web/vercel.json) installs from the monorepo root and builds `@scan-it/web`. Set **`VITE_CONVEX_URL`**, **`VITE_PAIRING_ORIGIN`** (production URL of this web deployment or your canonical URL), optional **`VITE_DESKTOP_*`** URL overrides for download links, and any dev/SSL vars if needed.
-2. **Marketing** — Root Directory `apps/marketing`. See [`apps/marketing/vercel.json`](./apps/marketing/vercel.json). Set **`VITE_WEB_APP_URL`** and optional **`VITE_DESKTOP_*`** overrides.
+Static SEO files live in [`apps/web/public`](./apps/web/public) (`robots.txt`, `sitemap.xml`). Update the hostname there if your production domain is not `https://scan.glennsvanberg.se`.
 
 On Vercel, environment variables are configured in the project settings (there is no root `.env.local`); names are the same as in the table above.
 
@@ -180,7 +169,7 @@ Pushing a tag `v*` runs [`.github/workflows/release-desktop.yml`](./.github/work
 | `scan-it-windows-setup.exe` | NSIS installer (x64) |
 | `scan-it-macos.dmg` | macOS app (universal binary when the workflow succeeds) |
 
-Stable filenames are required for `https://github.com/<owner>/<repo>/releases/latest/download/<filename>` links on the marketing site and landing page.
+Stable filenames are required for `https://github.com/<owner>/<repo>/releases/latest/download/<filename>` links on the landing page.
 
 Configure repository **Variables** **`VITE_CONVEX_URL`** and **`VITE_PAIRING_ORIGIN`** so the embedded UI points at your Convex deployment and phone pairing URLs are correct.
 

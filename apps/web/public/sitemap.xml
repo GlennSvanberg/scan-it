@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Replace https://scan.glennsvanberg.se with your production origin if different. -->
+  <url><loc>https://scan.glennsvanberg.se/</loc><changefreq>weekly</changefreq><priority>1</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/terms</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/privacy</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/about</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/wireless-barcode-scanner</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/barcode-scanner-for-excel</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/qr-scanner-to-pc</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/inventory-barcode-scanner</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/barcode-scanner-for-small-business</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/use-cases/inventory-counting</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/use-cases/retail-stocktakes</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/use-cases/excel-barcode-entry</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/use-cases/event-check-in</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/use-cases/warehouse-picking</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://scan.glennsvanberg.se/compare/phone-barcode-scanner-vs-barcode-to-pc</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+</urlset>

@@ -9,12 +9,30 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WirelessBarcodeScannerRouteImport } from './routes/wireless-barcode-scanner'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StartRouteImport } from './routes/start'
+import { Route as QrScannerToPcRouteImport } from './routes/qr-scanner-to-pc'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as InventoryBarcodeScannerRouteImport } from './routes/inventory-barcode-scanner'
+import { Route as BarcodeScannerForSmallBusinessRouteImport } from './routes/barcode-scanner-for-small-business'
+import { Route as BarcodeScannerForExcelRouteImport } from './routes/barcode-scanner-for-excel'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UseCasesWarehousePickingRouteImport } from './routes/use-cases.warehouse-picking'
+import { Route as UseCasesRetailStocktakesRouteImport } from './routes/use-cases.retail-stocktakes'
+import { Route as UseCasesInventoryCountingRouteImport } from './routes/use-cases.inventory-counting'
+import { Route as UseCasesExcelBarcodeEntryRouteImport } from './routes/use-cases.excel-barcode-entry'
+import { Route as UseCasesEventCheckInRouteImport } from './routes/use-cases.event-check-in'
 import { Route as SPublicIdRouteImport } from './routes/s.$publicId'
 import { Route as DeskPublicIdRouteImport } from './routes/desk.$publicId'
+import { Route as ComparePhoneBarcodeScannerVsBarcodeToPcRouteImport } from './routes/compare.phone-barcode-scanner-vs-barcode-to-pc'
 
+const WirelessBarcodeScannerRoute = WirelessBarcodeScannerRouteImport.update({
+  id: '/wireless-barcode-scanner',
+  path: '/wireless-barcode-scanner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -25,9 +43,69 @@ const StartRoute = StartRouteImport.update({
   path: '/start',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QrScannerToPcRoute = QrScannerToPcRouteImport.update({
+  id: '/qr-scanner-to-pc',
+  path: '/qr-scanner-to-pc',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InventoryBarcodeScannerRoute = InventoryBarcodeScannerRouteImport.update({
+  id: '/inventory-barcode-scanner',
+  path: '/inventory-barcode-scanner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BarcodeScannerForSmallBusinessRoute =
+  BarcodeScannerForSmallBusinessRouteImport.update({
+    id: '/barcode-scanner-for-small-business',
+    path: '/barcode-scanner-for-small-business',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const BarcodeScannerForExcelRoute = BarcodeScannerForExcelRouteImport.update({
+  id: '/barcode-scanner-for-excel',
+  path: '/barcode-scanner-for-excel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UseCasesWarehousePickingRoute =
+  UseCasesWarehousePickingRouteImport.update({
+    id: '/use-cases/warehouse-picking',
+    path: '/use-cases/warehouse-picking',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const UseCasesRetailStocktakesRoute =
+  UseCasesRetailStocktakesRouteImport.update({
+    id: '/use-cases/retail-stocktakes',
+    path: '/use-cases/retail-stocktakes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const UseCasesInventoryCountingRoute =
+  UseCasesInventoryCountingRouteImport.update({
+    id: '/use-cases/inventory-counting',
+    path: '/use-cases/inventory-counting',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const UseCasesExcelBarcodeEntryRoute =
+  UseCasesExcelBarcodeEntryRouteImport.update({
+    id: '/use-cases/excel-barcode-entry',
+    path: '/use-cases/excel-barcode-entry',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const UseCasesEventCheckInRoute = UseCasesEventCheckInRouteImport.update({
+  id: '/use-cases/event-check-in',
+  path: '/use-cases/event-check-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SPublicIdRoute = SPublicIdRouteImport.update({
@@ -40,53 +118,167 @@ const DeskPublicIdRoute = DeskPublicIdRouteImport.update({
   path: '/desk/$publicId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComparePhoneBarcodeScannerVsBarcodeToPcRoute =
+  ComparePhoneBarcodeScannerVsBarcodeToPcRouteImport.update({
+    id: '/compare/phone-barcode-scanner-vs-barcode-to-pc',
+    path: '/compare/phone-barcode-scanner-vs-barcode-to-pc',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/barcode-scanner-for-excel': typeof BarcodeScannerForExcelRoute
+  '/barcode-scanner-for-small-business': typeof BarcodeScannerForSmallBusinessRoute
+  '/inventory-barcode-scanner': typeof InventoryBarcodeScannerRoute
+  '/privacy': typeof PrivacyRoute
+  '/qr-scanner-to-pc': typeof QrScannerToPcRoute
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
+  '/wireless-barcode-scanner': typeof WirelessBarcodeScannerRoute
+  '/compare/phone-barcode-scanner-vs-barcode-to-pc': typeof ComparePhoneBarcodeScannerVsBarcodeToPcRoute
   '/desk/$publicId': typeof DeskPublicIdRoute
   '/s/$publicId': typeof SPublicIdRoute
+  '/use-cases/event-check-in': typeof UseCasesEventCheckInRoute
+  '/use-cases/excel-barcode-entry': typeof UseCasesExcelBarcodeEntryRoute
+  '/use-cases/inventory-counting': typeof UseCasesInventoryCountingRoute
+  '/use-cases/retail-stocktakes': typeof UseCasesRetailStocktakesRoute
+  '/use-cases/warehouse-picking': typeof UseCasesWarehousePickingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/barcode-scanner-for-excel': typeof BarcodeScannerForExcelRoute
+  '/barcode-scanner-for-small-business': typeof BarcodeScannerForSmallBusinessRoute
+  '/inventory-barcode-scanner': typeof InventoryBarcodeScannerRoute
+  '/privacy': typeof PrivacyRoute
+  '/qr-scanner-to-pc': typeof QrScannerToPcRoute
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
+  '/wireless-barcode-scanner': typeof WirelessBarcodeScannerRoute
+  '/compare/phone-barcode-scanner-vs-barcode-to-pc': typeof ComparePhoneBarcodeScannerVsBarcodeToPcRoute
   '/desk/$publicId': typeof DeskPublicIdRoute
   '/s/$publicId': typeof SPublicIdRoute
+  '/use-cases/event-check-in': typeof UseCasesEventCheckInRoute
+  '/use-cases/excel-barcode-entry': typeof UseCasesExcelBarcodeEntryRoute
+  '/use-cases/inventory-counting': typeof UseCasesInventoryCountingRoute
+  '/use-cases/retail-stocktakes': typeof UseCasesRetailStocktakesRoute
+  '/use-cases/warehouse-picking': typeof UseCasesWarehousePickingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/barcode-scanner-for-excel': typeof BarcodeScannerForExcelRoute
+  '/barcode-scanner-for-small-business': typeof BarcodeScannerForSmallBusinessRoute
+  '/inventory-barcode-scanner': typeof InventoryBarcodeScannerRoute
+  '/privacy': typeof PrivacyRoute
+  '/qr-scanner-to-pc': typeof QrScannerToPcRoute
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
+  '/wireless-barcode-scanner': typeof WirelessBarcodeScannerRoute
+  '/compare/phone-barcode-scanner-vs-barcode-to-pc': typeof ComparePhoneBarcodeScannerVsBarcodeToPcRoute
   '/desk/$publicId': typeof DeskPublicIdRoute
   '/s/$publicId': typeof SPublicIdRoute
+  '/use-cases/event-check-in': typeof UseCasesEventCheckInRoute
+  '/use-cases/excel-barcode-entry': typeof UseCasesExcelBarcodeEntryRoute
+  '/use-cases/inventory-counting': typeof UseCasesInventoryCountingRoute
+  '/use-cases/retail-stocktakes': typeof UseCasesRetailStocktakesRoute
+  '/use-cases/warehouse-picking': typeof UseCasesWarehousePickingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/start' | '/terms' | '/desk/$publicId' | '/s/$publicId'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/barcode-scanner-for-excel'
+    | '/barcode-scanner-for-small-business'
+    | '/inventory-barcode-scanner'
+    | '/privacy'
+    | '/qr-scanner-to-pc'
+    | '/start'
+    | '/terms'
+    | '/wireless-barcode-scanner'
+    | '/compare/phone-barcode-scanner-vs-barcode-to-pc'
+    | '/desk/$publicId'
+    | '/s/$publicId'
+    | '/use-cases/event-check-in'
+    | '/use-cases/excel-barcode-entry'
+    | '/use-cases/inventory-counting'
+    | '/use-cases/retail-stocktakes'
+    | '/use-cases/warehouse-picking'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/start' | '/terms' | '/desk/$publicId' | '/s/$publicId'
+  to:
+    | '/'
+    | '/about'
+    | '/barcode-scanner-for-excel'
+    | '/barcode-scanner-for-small-business'
+    | '/inventory-barcode-scanner'
+    | '/privacy'
+    | '/qr-scanner-to-pc'
+    | '/start'
+    | '/terms'
+    | '/wireless-barcode-scanner'
+    | '/compare/phone-barcode-scanner-vs-barcode-to-pc'
+    | '/desk/$publicId'
+    | '/s/$publicId'
+    | '/use-cases/event-check-in'
+    | '/use-cases/excel-barcode-entry'
+    | '/use-cases/inventory-counting'
+    | '/use-cases/retail-stocktakes'
+    | '/use-cases/warehouse-picking'
   id:
     | '__root__'
     | '/'
+    | '/about'
+    | '/barcode-scanner-for-excel'
+    | '/barcode-scanner-for-small-business'
+    | '/inventory-barcode-scanner'
+    | '/privacy'
+    | '/qr-scanner-to-pc'
     | '/start'
     | '/terms'
+    | '/wireless-barcode-scanner'
+    | '/compare/phone-barcode-scanner-vs-barcode-to-pc'
     | '/desk/$publicId'
     | '/s/$publicId'
+    | '/use-cases/event-check-in'
+    | '/use-cases/excel-barcode-entry'
+    | '/use-cases/inventory-counting'
+    | '/use-cases/retail-stocktakes'
+    | '/use-cases/warehouse-picking'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  BarcodeScannerForExcelRoute: typeof BarcodeScannerForExcelRoute
+  BarcodeScannerForSmallBusinessRoute: typeof BarcodeScannerForSmallBusinessRoute
+  InventoryBarcodeScannerRoute: typeof InventoryBarcodeScannerRoute
+  PrivacyRoute: typeof PrivacyRoute
+  QrScannerToPcRoute: typeof QrScannerToPcRoute
   StartRoute: typeof StartRoute
   TermsRoute: typeof TermsRoute
+  WirelessBarcodeScannerRoute: typeof WirelessBarcodeScannerRoute
+  ComparePhoneBarcodeScannerVsBarcodeToPcRoute: typeof ComparePhoneBarcodeScannerVsBarcodeToPcRoute
   DeskPublicIdRoute: typeof DeskPublicIdRoute
   SPublicIdRoute: typeof SPublicIdRoute
+  UseCasesEventCheckInRoute: typeof UseCasesEventCheckInRoute
+  UseCasesExcelBarcodeEntryRoute: typeof UseCasesExcelBarcodeEntryRoute
+  UseCasesInventoryCountingRoute: typeof UseCasesInventoryCountingRoute
+  UseCasesRetailStocktakesRoute: typeof UseCasesRetailStocktakesRoute
+  UseCasesWarehousePickingRoute: typeof UseCasesWarehousePickingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wireless-barcode-scanner': {
+      id: '/wireless-barcode-scanner'
+      path: '/wireless-barcode-scanner'
+      fullPath: '/wireless-barcode-scanner'
+      preLoaderRoute: typeof WirelessBarcodeScannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -101,11 +293,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StartRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/qr-scanner-to-pc': {
+      id: '/qr-scanner-to-pc'
+      path: '/qr-scanner-to-pc'
+      fullPath: '/qr-scanner-to-pc'
+      preLoaderRoute: typeof QrScannerToPcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inventory-barcode-scanner': {
+      id: '/inventory-barcode-scanner'
+      path: '/inventory-barcode-scanner'
+      fullPath: '/inventory-barcode-scanner'
+      preLoaderRoute: typeof InventoryBarcodeScannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/barcode-scanner-for-small-business': {
+      id: '/barcode-scanner-for-small-business'
+      path: '/barcode-scanner-for-small-business'
+      fullPath: '/barcode-scanner-for-small-business'
+      preLoaderRoute: typeof BarcodeScannerForSmallBusinessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/barcode-scanner-for-excel': {
+      id: '/barcode-scanner-for-excel'
+      path: '/barcode-scanner-for-excel'
+      fullPath: '/barcode-scanner-for-excel'
+      preLoaderRoute: typeof BarcodeScannerForExcelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/use-cases/warehouse-picking': {
+      id: '/use-cases/warehouse-picking'
+      path: '/use-cases/warehouse-picking'
+      fullPath: '/use-cases/warehouse-picking'
+      preLoaderRoute: typeof UseCasesWarehousePickingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/use-cases/retail-stocktakes': {
+      id: '/use-cases/retail-stocktakes'
+      path: '/use-cases/retail-stocktakes'
+      fullPath: '/use-cases/retail-stocktakes'
+      preLoaderRoute: typeof UseCasesRetailStocktakesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/use-cases/inventory-counting': {
+      id: '/use-cases/inventory-counting'
+      path: '/use-cases/inventory-counting'
+      fullPath: '/use-cases/inventory-counting'
+      preLoaderRoute: typeof UseCasesInventoryCountingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/use-cases/excel-barcode-entry': {
+      id: '/use-cases/excel-barcode-entry'
+      path: '/use-cases/excel-barcode-entry'
+      fullPath: '/use-cases/excel-barcode-entry'
+      preLoaderRoute: typeof UseCasesExcelBarcodeEntryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/use-cases/event-check-in': {
+      id: '/use-cases/event-check-in'
+      path: '/use-cases/event-check-in'
+      fullPath: '/use-cases/event-check-in'
+      preLoaderRoute: typeof UseCasesEventCheckInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/s/$publicId': {
@@ -122,15 +391,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeskPublicIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compare/phone-barcode-scanner-vs-barcode-to-pc': {
+      id: '/compare/phone-barcode-scanner-vs-barcode-to-pc'
+      path: '/compare/phone-barcode-scanner-vs-barcode-to-pc'
+      fullPath: '/compare/phone-barcode-scanner-vs-barcode-to-pc'
+      preLoaderRoute: typeof ComparePhoneBarcodeScannerVsBarcodeToPcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  BarcodeScannerForExcelRoute: BarcodeScannerForExcelRoute,
+  BarcodeScannerForSmallBusinessRoute: BarcodeScannerForSmallBusinessRoute,
+  InventoryBarcodeScannerRoute: InventoryBarcodeScannerRoute,
+  PrivacyRoute: PrivacyRoute,
+  QrScannerToPcRoute: QrScannerToPcRoute,
   StartRoute: StartRoute,
   TermsRoute: TermsRoute,
+  WirelessBarcodeScannerRoute: WirelessBarcodeScannerRoute,
+  ComparePhoneBarcodeScannerVsBarcodeToPcRoute:
+    ComparePhoneBarcodeScannerVsBarcodeToPcRoute,
   DeskPublicIdRoute: DeskPublicIdRoute,
   SPublicIdRoute: SPublicIdRoute,
+  UseCasesEventCheckInRoute: UseCasesEventCheckInRoute,
+  UseCasesExcelBarcodeEntryRoute: UseCasesExcelBarcodeEntryRoute,
+  UseCasesInventoryCountingRoute: UseCasesInventoryCountingRoute,
+  UseCasesRetailStocktakesRoute: UseCasesRetailStocktakesRoute,
+  UseCasesWarehousePickingRoute: UseCasesWarehousePickingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

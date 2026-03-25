@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Update the hostname to match VITE_PAIRING_ORIGIN / your production domain.
+Sitemap: https://scan.glennsvanberg.se/sitemap.xml

@@ -13,8 +13,7 @@ export type SiteHeaderProps = {
   /** When set, shows a Back control that ends the desk flow (caller handles navigation + disconnect). */
   onBrandClick?: () => void | Promise<void>
   /**
-   * When set, home uses a plain anchor instead of the router (e.g. marketing app without
-   * TanStack Router). Ignored when `onBrandClick` is set.
+   * When set, home uses a plain anchor instead of the router. Ignored when `onBrandClick` is set.
    */
   homeHref?: string
 }

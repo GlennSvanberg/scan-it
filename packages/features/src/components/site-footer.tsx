@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
 import { Github, Mail, Phone } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 function XSocialIcon({ className }: { className?: string }) {
   return (
@@ -20,9 +20,13 @@ const iconWrap =
 export type SiteFooterProps = {
   /** Link to the full Terms of Service page (e.g. router Link or &lt;a&gt;). */
   termsLink: ReactNode
+  /** Optional Privacy Policy link (marketing site). */
+  privacyLink?: ReactNode
+  /** Optional About link (marketing site). */
+  aboutLink?: ReactNode
 }
 
-export function SiteFooter({ termsLink }: SiteFooterProps) {
+export function SiteFooter({ termsLink, privacyLink, aboutLink }: SiteFooterProps) {
   const year = new Date().getFullYear()
 
   return (
@@ -35,7 +39,25 @@ export function SiteFooter({ termsLink }: SiteFooterProps) {
           <span className="text-muted-foreground/40" aria-hidden>
             ·
           </span>
-          <span className="text-xs">{termsLink}</span>
+          <span className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:justify-start">
+            {termsLink}
+            {privacyLink ? (
+              <>
+                <span className="text-muted-foreground/40" aria-hidden>
+                  ·
+                </span>
+                {privacyLink}
+              </>
+            ) : null}
+            {aboutLink ? (
+              <>
+                <span className="text-muted-foreground/40" aria-hidden>
+                  ·
+                </span>
+                {aboutLink}
+              </>
+            ) : null}
+          </span>
         </div>
 
         <nav

@@ -12,6 +12,7 @@ import type { QueryClient } from '@tanstack/react-query'
 // which Vite serves as JS (HMR), so the browser never applies Tailwind. Importing
 // here lets Vite inject real CSS in dev and still extract a file in production.
 import '~/styles/app.css'
+import { MarketingJsonLd } from '~/components/marketing-json-ld'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -24,7 +25,6 @@ export const Route = createRootRouteWithContext<{
         content:
           'width=device-width, initial-scale=1, viewport-fit=cover',
       },
-      { title: 'Scan It' },
     ],
     links: [
       {
@@ -72,7 +72,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <MarketingJsonLd />
+          {children}
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>
