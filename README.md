@@ -175,7 +175,16 @@ Stable filenames are required for `https://github.com/<owner>/<repo>/releases/la
 
 Configure repository **Variables** **`VITE_CONVEX_URL`** and **`VITE_PAIRING_ORIGIN`** so the embedded UI points at your Convex deployment and phone pairing URLs are correct.
 
-**macOS:** CI builds are **not** code-signed or notarized; users may need to right-click → Open the first time. Add Apple signing in CI later if you want a smoother Gatekeeper experience.
+For macOS Gatekeeper-friendly releases, configure repository **Secrets**:
+
+- `APPLE_SIGNING_IDENTITY`
+- `APPLE_CERTIFICATE` (base64-encoded `.p12`)
+- `APPLE_CERTIFICATE_PASSWORD`
+- `APPLE_ID`
+- `APPLE_PASSWORD` (app-specific password)
+- `APPLE_TEAM_ID`
+
+Without these secrets, the DMG is still produced but may be blocked by Gatekeeper on first launch.
 
 ## Style
 

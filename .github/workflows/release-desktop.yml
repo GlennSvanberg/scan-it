@@ -68,12 +68,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Warn when macOS signing is not configured
+        if: ${{ secrets.APPLE_SIGNING_IDENTITY == '' || secrets.APPLE_CERTIFICATE == '' || secrets.APPLE_CERTIFICATE_PASSWORD == '' || secrets.APPLE_ID == '' || secrets.APPLE_PASSWORD == '' || secrets.APPLE_TEAM_ID == '' }}
+        run: echo "::warning::macOS signing/notarization secrets are not fully configured. Resulting DMG may be blocked by Gatekeeper."
+
       - name: Build Tauri (macOS universal DMG)
         working-directory: apps/desktop
         run: npx tauri build --target universal-apple-darwin
         env:
           VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL }}
           VITE_PAIRING_ORIGIN: ${{ vars.VITE_PAIRING_ORIGIN }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Stage macOS DMG
         run: |

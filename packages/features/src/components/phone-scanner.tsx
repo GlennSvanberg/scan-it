@@ -177,6 +177,20 @@ function cameraIdArg(facing: 'environment' | 'user'): { facingMode: 'environment
   return { facingMode: facing }
 }
 
+function shouldUseNativeBarcodeDetector(): boolean {
+  if (typeof navigator === 'undefined') {
+    return true
+  }
+  const ua = navigator.userAgent.toLowerCase()
+  const isAppleMobile = /iphone|ipad|ipod/.test(ua)
+  // iOS can expose BarcodeDetector with partial/unstable format support.
+  // Force ZXing there for consistent barcode decoding.
+  if (isAppleMobile) {
+    return false
+  }
+  return true
+}
+
 function advancedVideoConstraints(
   facing: 'environment' | 'user',
   tier: 'high' | 'mid',
@@ -700,7 +714,7 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
         html5 = new Html5Qrcode(regionId, {
           verbose: false,
           formatsToSupport: SUPPORTED_FORMATS,
-          useBarCodeDetectorIfSupported: true,
+          useBarCodeDetectorIfSupported: shouldUseNativeBarcodeDetector(),
         })
         html5Ref.current = html5
       }
@@ -730,10 +744,10 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
         viewfinderHeight,
       ) => {
         const cap = Math.max(Math.min(viewfinderWidth, viewfinderHeight), 1)
-        // Large centered guide (library dims outside this box). No tiny 340px cap — full-screen
-        // layouts need a visibly obvious target on tall phones.
-        const target = Math.round(cap * 0.72)
-        const side = Math.min(Math.max(target, 160), Math.floor(cap * 0.92))
+        // Keep the guide large on phones so users can place QR and 1D barcodes
+        // comfortably inside the active decode region.
+        const target = Math.round(cap * 0.86)
+        const side = Math.min(Math.max(target, 220), Math.floor(cap * 0.96))
         return { width: side, height: side }
       }
 
@@ -1001,7 +1015,7 @@ export function PhoneScanner({ publicId, deviceId }: Props) {
             className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center"
             aria-hidden
           >
-            <div className="scanner-target-brackets aspect-square w-[min(72vw,72vmin)] max-h-[55dvh] max-w-[min(72vw,420px)] shrink-0" />
+            <div className="scanner-target-brackets aspect-square w-[min(86vw,86vmin)] max-h-[70dvh] max-w-[96vw] shrink-0" />
           </div>
           {scanPreview ? (
             <div
