@@ -21,8 +21,8 @@ export function AboutPage() {
             hardware.
           </p>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            The project is developed in the open on GitHub. Feedback is welcome
-            through issues and community discussion.
+            The project is open source (MIT) and developed on GitHub. Feedback
+            is welcome through issues and community discussion.
           </p>
           <p className="text-sm leading-relaxed text-muted-foreground">
             <a

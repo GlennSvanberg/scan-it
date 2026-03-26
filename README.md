@@ -1,5 +1,7 @@
 # Scan It
 
+Licensed under the [MIT License](./LICENSE).
+
 Phone-as-a-scanner for your desktop: open Scan It on a computer, scan a pairing QR code with your phone, then scan barcodes and QR codes with the phone camera. Decodings show up on the desk in real time (Convex subscriptions). Clipboard auto-copy for new scans is **off by default**; turn on **Scan to clipboard** on the desk when you want it. Closing the desk tab (or leaving via the Scan It header) ends the desk on the server; the client also sends a best-effort **HTTP beacon** to `POST /desk/end` on your deployment’s **`.convex.site`** origin so the phone disconnects when the tab is closed.
 
 **Stack:** [Convex](https://convex.dev) (backend + realtime), [TanStack Start](https://tanstack.com/start) + React (web app), [Tauri 2](https://v2.tauri.app) + React (optional Windows/macOS desktop), [Tailwind CSS](https://tailwindcss.com) v4, shadcn-style UI primitives (Radix Slot + CVA), [react-qr-code](https://www.npmjs.com/package/react-qr-code) (pairing QR on the desk), [html5-qrcode](https://www.npmjs.com/package/html5-qrcode) (camera scanning on the phone).

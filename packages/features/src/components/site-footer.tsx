@@ -98,8 +98,20 @@ export function SiteFooter({ termsLink, privacyLink, aboutLink }: SiteFooterProp
           </a>
         </nav>
 
-        <p className="text-[11px] tabular-nums text-muted-foreground sm:ml-auto">
-          © {year} Scan It
+        <p className="text-center text-[11px] leading-snug text-muted-foreground sm:ml-auto sm:text-right">
+          <span className="tabular-nums">© {year} Scan It</span>
+          <span className="text-muted-foreground/40" aria-hidden>
+            {' '}
+            ·{' '}
+          </span>
+          <a
+            href="https://github.com/GlennSvanberg/scan-it/blob/main/LICENSE"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-foreground/80 underline decoration-primary/30 underline-offset-2 transition-colors hover:text-primary hover:decoration-primary"
+          >
+            Open source (MIT)
+          </a>
         </p>
       </div>
     </footer>

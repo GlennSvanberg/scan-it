@@ -15,6 +15,7 @@ import { Route as StartRouteImport } from './routes/start'
 import { Route as QrScannerToPcRouteImport } from './routes/qr-scanner-to-pc'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as InventoryBarcodeScannerRouteImport } from './routes/inventory-barcode-scanner'
+import { Route as GuidesRouteImport } from './routes/guides'
 import { Route as BarcodeScannerForSmallBusinessRouteImport } from './routes/barcode-scanner-for-small-business'
 import { Route as BarcodeScannerForExcelRouteImport } from './routes/barcode-scanner-for-excel'
 import { Route as AboutRouteImport } from './routes/about'
@@ -56,6 +57,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const InventoryBarcodeScannerRoute = InventoryBarcodeScannerRouteImport.update({
   id: '/inventory-barcode-scanner',
   path: '/inventory-barcode-scanner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuidesRoute = GuidesRouteImport.update({
+  id: '/guides',
+  path: '/guides',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BarcodeScannerForSmallBusinessRoute =
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/barcode-scanner-for-excel': typeof BarcodeScannerForExcelRoute
   '/barcode-scanner-for-small-business': typeof BarcodeScannerForSmallBusinessRoute
+  '/guides': typeof GuidesRoute
   '/inventory-barcode-scanner': typeof InventoryBarcodeScannerRoute
   '/privacy': typeof PrivacyRoute
   '/qr-scanner-to-pc': typeof QrScannerToPcRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/barcode-scanner-for-excel': typeof BarcodeScannerForExcelRoute
   '/barcode-scanner-for-small-business': typeof BarcodeScannerForSmallBusinessRoute
+  '/guides': typeof GuidesRoute
   '/inventory-barcode-scanner': typeof InventoryBarcodeScannerRoute
   '/privacy': typeof PrivacyRoute
   '/qr-scanner-to-pc': typeof QrScannerToPcRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/barcode-scanner-for-excel': typeof BarcodeScannerForExcelRoute
   '/barcode-scanner-for-small-business': typeof BarcodeScannerForSmallBusinessRoute
+  '/guides': typeof GuidesRoute
   '/inventory-barcode-scanner': typeof InventoryBarcodeScannerRoute
   '/privacy': typeof PrivacyRoute
   '/qr-scanner-to-pc': typeof QrScannerToPcRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/barcode-scanner-for-excel'
     | '/barcode-scanner-for-small-business'
+    | '/guides'
     | '/inventory-barcode-scanner'
     | '/privacy'
     | '/qr-scanner-to-pc'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/barcode-scanner-for-excel'
     | '/barcode-scanner-for-small-business'
+    | '/guides'
     | '/inventory-barcode-scanner'
     | '/privacy'
     | '/qr-scanner-to-pc'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/barcode-scanner-for-excel'
     | '/barcode-scanner-for-small-business'
+    | '/guides'
     | '/inventory-barcode-scanner'
     | '/privacy'
     | '/qr-scanner-to-pc'
@@ -254,6 +266,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   BarcodeScannerForExcelRoute: typeof BarcodeScannerForExcelRoute
   BarcodeScannerForSmallBusinessRoute: typeof BarcodeScannerForSmallBusinessRoute
+  GuidesRoute: typeof GuidesRoute
   InventoryBarcodeScannerRoute: typeof InventoryBarcodeScannerRoute
   PrivacyRoute: typeof PrivacyRoute
   QrScannerToPcRoute: typeof QrScannerToPcRoute
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/inventory-barcode-scanner'
       fullPath: '/inventory-barcode-scanner'
       preLoaderRoute: typeof InventoryBarcodeScannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guides': {
+      id: '/guides'
+      path: '/guides'
+      fullPath: '/guides'
+      preLoaderRoute: typeof GuidesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/barcode-scanner-for-small-business': {
@@ -406,6 +426,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   BarcodeScannerForExcelRoute: BarcodeScannerForExcelRoute,
   BarcodeScannerForSmallBusinessRoute: BarcodeScannerForSmallBusinessRoute,
+  GuidesRoute: GuidesRoute,
   InventoryBarcodeScannerRoute: InventoryBarcodeScannerRoute,
   PrivacyRoute: PrivacyRoute,
   QrScannerToPcRoute: QrScannerToPcRoute,

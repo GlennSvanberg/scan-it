@@ -13,6 +13,7 @@ import {
   primaryDesktopDownloadLabel,
   resolveDesktopDownloadUrls,
 } from '@scan-it/lib'
+import { marketingArticles } from '~/content/marketing-articles'
 
 export function LandingPage() {
   const desktopKind = detectClientDesktopKind()
@@ -349,41 +350,28 @@ export function LandingPage() {
               Guides
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground">
-              Short pages for common searches and workflows.
+              Topic pages for common searches and workflows—pairing, spreadsheets, inventory, and
+              more.
+            </p>
+            <p className="mx-auto mt-4 text-center text-sm">
+              <Link
+                to="/guides"
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                All guides
+              </Link>
             </p>
             <ul className="mx-auto mt-8 grid max-w-3xl gap-3 text-sm sm:grid-cols-2">
-              <li>
-                <Link
-                  to="/wireless-barcode-scanner"
-                  className="text-primary underline-offset-2 hover:underline"
-                >
-                  Wireless barcode scanner for PC
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/barcode-scanner-for-excel"
-                  className="text-primary underline-offset-2 hover:underline"
-                >
-                  Barcode scanner for Excel
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/inventory-barcode-scanner"
-                  className="text-primary underline-offset-2 hover:underline"
-                >
-                  Inventory barcode scanner
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/compare/phone-barcode-scanner-vs-barcode-to-pc"
-                  className="text-primary underline-offset-2 hover:underline"
-                >
-                  Compare with other phone-to-PC tools
-                </Link>
-              </li>
+              {marketingArticles.map((article) => (
+                <li key={article.path}>
+                  <Link
+                    to={article.path}
+                    className="text-primary underline-offset-2 hover:underline"
+                  >
+                    {article.h1}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </section>
